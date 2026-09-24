@@ -1,0 +1,5 @@
+{
+  "users": [
+    { "uid": 1, "username": "admin", "status": "active", "tier": "premium" }
+  ]
+}

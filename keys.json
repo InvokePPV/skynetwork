@@ -1,0 +1,9 @@
+{
+  "status": "success",
+  "version": "1.0",
+  "keys": {
+    "aes_key": "0fe3f605228b91182191cbd26cb76730",
+    "xor_key": "skyguard_xor_v1",
+    "auth_token": "sg_git_live_key_2026"
+  }
+}

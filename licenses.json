@@ -1,0 +1,6 @@
+{
+  "status": "active",
+  "license_type": "lifetime",
+  "allowed_hwids": ["*"],
+  "valid_until": "2099-12-31"
+}
