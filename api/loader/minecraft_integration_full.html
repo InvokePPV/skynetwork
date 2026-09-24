@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Launcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .launcher-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .launcher-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .launcher-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .launcher-subtitle {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .minecraft-logo {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .launch-section {
+            margin-bottom: 30px;
+        }
+
+        .launch-btn {
+            width: 100%;
+            padding: 18px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .launch-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .launch-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .launch-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .launch-btn.loading::after {
+            content: '';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            width: 0%;
+            border-radius: 20px;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .info-section {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.show {
+            display: flex;
+        }
+
+        .notification.success {
+            border-left: 4px solid #22c55e;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .notification.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-icon {
+            font-size: 24px;
+        }
+
+        .notification-message {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .eula-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .eula-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .eula-checkbox input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .eula-checkbox label {
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .eula-checkbox a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .eula-checkbox a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="launcher-container">
+        <div class="launcher-header">
+            <div class="minecraft-logo">🎮</div>
+            <h1 class="launcher-title">Minecraft Launcher</h1>
+            <p class="launcher-subtitle">Версия 1.21.4 с модами</p>
+        </div>
+
+        <div class="info-section">
+            <div class="info-item">
+                <span class="info-label">Версия:</span>
+                <span class="info-value">1.21.4</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Моды:</span>
+                <span class="info-value">Fabric API, Sodium, Iris</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">RAM:</span>
+                <span class="info-value" id="ramValue">4096 MB</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Разрешение:</span>
+                <span class="info-value" id="resolutionValue">1920x1080</span>
+            </div>
+        </div>
+
+        <div class="eula-section">
+            <div class="eula-checkbox">
+                <input type="checkbox" id="acceptEula" required>
+                <label for="acceptEula">
+                    Я принимаю <a href="https://www.minecraft.net/en-us/eula" target="_blank">EULA Minecraft</a>
+                </label>
+            </div>
+        </div>
+
+        <div class="progress-section" id="progressSection">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+                <span class="progress-text" id="progressText">0%</span>
+            </div>
+            <div class="status-text" id="statusText">Подготовка...</div>
+        </div>
+
+        <div class="launch-section">
+            <button class="launch-btn" id="launchBtn" onclick="handleLaunch()">
+                🚀 Запустить Minecraft
+            </button>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <span class="notification-icon" id="notificationIcon"></span>
+        <span class="notification-message" id="notificationMessage"></span>
+    </div>
+
+    <script src="minecraft_launcher.js"></script>
+    <script>
+        let isDownloading = false;
+        let isLaunching = false;
+
+        // Обработка сообщений от C++
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            
+            if (typeof data === 'string') {
+                if (data === 'minecraft_launching') {
+                    isLaunching = true;
+                    updateButton('Запуск игры...', true, true);
+                    showNotification('Запуск Minecraft...', 'info', '⏳');
+                }
+                else if (data === 'minecraft_launched') {
+                    isLaunching = false;
+                    updateButton('🚀 Запустить Minecraft', false, false);
+                    showNotification('Minecraft успешно запущен!', 'success', '✅');
+                    hideProgress();
+                }
+                else if (data === 'minecraft_launch_failed') {
+                    isLaunching = false;
+                    updateButton('🚀 Запустить Minecraft', false, false);
+                    showNotification('Ошибка запуска. Проверьте Java.', 'error', '❌');
+                    hideProgress();
+                }
+                else if (data === 'download_complete') {
+                    isDownloading = false;
+                    updateButton('🚀 Запустить Minecraft', false, false);
+                    showNotification('Загрузка завершена!', 'success', '✅');
+                    hideProgress();
+                }
+                else if (data === 'download_failed') {
+                    isDownloading = false;
+                    updateButton('🚀 Запустить Minecraft', false, false);
+                    showNotification('Ошибка загрузки', 'error', '❌');
+                    hideProgress();
+                }
+                else if (data.startsWith('download_progress:')) {
+                    const progressData = JSON.parse(data.substring(18));
+                    updateProgress(progressData.status, progressData.progress);
+                }
+                else if (data.startsWith('config_loaded:')) {
+                    const config = JSON.parse(data.substring(14));
+                    updateConfigDisplay(config);
+                }
+            }
+        });
+
+        function handleLaunch() {
+            const eulaCheckbox = document.getElementById('acceptEula');
+            
+            if (!eulaCheckbox.checked) {
+                showNotification('Примите EULA для продолжения', 'error', '⚠️');
+                return;
+            }
+
+            if (isDownloading || isLaunching) return;
+
+            // Запрашиваем конфигурацию
+            window.postMessage('load_config', '*');
+
+            // Небольшая задержка для загрузки конфига
+            setTimeout(() => {
+                // Проверяем, установлен ли Minecraft (можно добавить проверку через C++)
+                const isInstalled = false; // Здесь должна быть реальная проверка
+
+                if (!isInstalled) {
+                    startDownload();
+                } else {
+                    startLaunch();
+                }
+            }, 100);
+        }
+
+        function startDownload() {
+            isDownloading = true;
+            showProgress();
+            updateButton('Загрузка...', true, true);
+            showNotification('Начинается загрузка Minecraft...', 'info', '📥');
+            window.postMessage('download_minecraft', '*');
+        }
+
+        function startLaunch() {
+            isLaunching = true;
+            updateButton('Запуск...', true, true);
+            showNotification('Запуск Minecraft...', 'info', '🚀');
+            window.postMessage('launch_minecraft', '*');
+        }
+
+        function updateButton(text, disabled, loading) {
+            const btn = document.getElementById('launchBtn');
+            btn.textContent = text;
+            btn.disabled = disabled;
+            
+            if (loading) {
+                btn.classList.add('loading');
+            } else {
+                btn.classList.remove('loading');
+            }
+        }
+
+        function showProgress() {
+            document.getElementById('progressSection').classList.add('active');
+        }
+
+        function hideProgress() {
+            setTimeout(() => {
+                document.getElementById('progressSection').classList.remove('active');
+            }, 1000);
+        }
+
+        function updateProgress(status, progress) {
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = progress + '%';
+            document.getElementById('statusText').textContent = status;
+            showProgress();
+        }
+
+        function updateConfigDisplay(config) {
+            document.getElementById('ramValue').textContent = config.ram + ' MB';
+            document.getElementById('resolutionValue').textContent = config.width + 'x' + config.height;
+        }
+
+        function showNotification(message, type, icon) {
+            const notification = document.getElementById('notification');
+            const notificationIcon = document.getElementById('notificationIcon');
+            const notificationMessage = document.getElementById('notificationMessage');
+
+            notification.className = 'notification show ' + type;
+            notificationIcon.textContent = icon;
+            notificationMessage.textContent = message;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+
+        // Загружаем конфигурацию при загрузке страницы
+        window.addEventListener('load', function() {
+            window.postMessage('load_config', '*');
+        });
+    </script>
+</body>
+</html>

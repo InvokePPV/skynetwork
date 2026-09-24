@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges" preserveAspectRatio="xMidYMid slice">
+  <!-- sky backdrop gradient -->
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#6bb4ff"/>
+      <stop offset="1" stop-color="#a9d4ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#sky)"/>
+
+  <!-- dirt base -->
+  <g fill="#7e4a26">
+    <rect x="0"  y="24" width="64" height="40"/>
+  </g>
+  <!-- dirt pixel variation -->
+  <g shape-rendering="crispEdges">
+    <rect x="4"  y="28" width="8" height="4" fill="#6a3d1f"/>
+    <rect x="20" y="32" width="6" height="4" fill="#8a552c"/>
+    <rect x="32" y="28" width="10" height="4" fill="#6a3d1f"/>
+    <rect x="48" y="36" width="8" height="4" fill="#8a552c"/>
+    <rect x="10" y="44" width="6" height="4" fill="#6a3d1f"/>
+    <rect x="30" y="48" width="10" height="4" fill="#8a552c"/>
+    <rect x="46" y="52" width="6" height="4" fill="#6a3d1f"/>
+    <rect x="2"  y="56" width="8" height="4" fill="#8a552c"/>
+    <rect x="20" y="56" width="8" height="4" fill="#6a3d1f"/>
+    <rect x="40" y="58" width="14" height="4" fill="#8a552c"/>
+  </g>
+
+  <!-- grass top band -->
+  <rect x="0" y="16" width="64" height="8" fill="#5ba829"/>
+  <!-- grass highlights -->
+  <g>
+    <rect x="2"  y="16" width="6" height="4" fill="#7bc83c"/>
+    <rect x="14" y="16" width="4" height="4" fill="#6fb733"/>
+    <rect x="22" y="16" width="8" height="4" fill="#7bc83c"/>
+    <rect x="36" y="16" width="6" height="4" fill="#6fb733"/>
+    <rect x="46" y="16" width="10" height="4" fill="#7bc83c"/>
+    <rect x="58" y="16" width="6" height="4" fill="#6fb733"/>
+  </g>
+
+  <!-- grass blade drips over dirt (classic Minecraft look) -->
+  <g fill="#5ba829">
+    <rect x="6"  y="24" width="2" height="3"/>
+    <rect x="12" y="24" width="3" height="2"/>
+    <rect x="20" y="24" width="2" height="4"/>
+    <rect x="28" y="24" width="4" height="2"/>
+    <rect x="36" y="24" width="2" height="3"/>
+    <rect x="44" y="24" width="3" height="2"/>
+    <rect x="52" y="24" width="2" height="4"/>
+    <rect x="58" y="24" width="3" height="2"/>
+  </g>
+
+  <!-- grass top darker shadow line -->
+  <rect x="0" y="22" width="64" height="2" fill="#3f7a1d" opacity="0.55"/>
+
+  <!-- subtle cloud -->
+  <g fill="#ffffff" opacity="0.7">
+    <rect x="4"  y="4" width="12" height="3"/>
+    <rect x="6"  y="7" width="16" height="3"/>
+    <rect x="40" y="2" width="10" height="3"/>
+    <rect x="38" y="5" width="14" height="3"/>
+  </g>
+</svg>

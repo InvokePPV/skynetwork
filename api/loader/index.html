@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Client</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@500;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+        *, *::before, *::after {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --c-text: #f4f4f5;
+            --c-muted: rgba(255,255,255,0.5);
+            --c-dim: rgba(255,255,255,0.22);
+            --c-border: rgba(255,255,255,0.08);
+            --c-field: rgba(255,255,255,0.03);
+            --r-lg: 20px;
+            --r-md: 12px;
+            --ease: cubic-bezier(0.22,1,0.36,1);
+        }
+
+        html, body { height: 100%; margin: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            color: var(--c-text);
+            overflow: hidden;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-feature-settings: 'ss01' on, 'cv11' on;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ======== CARD ======== */
+        .card {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            padding: 28px 20px 18px;
+            background: #000000;
+            border: none;
+            border-radius: 24px;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1;
+        }
+/* ======== CONTENT LAYERING ======== */
+        .ctrls, .header, form, .footer, #notif { position: relative; z-index: 2; }
+
+        /* ======== TOP CONTROLS ======== */
+        .ctrls {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 4;
+        }
+
+        .ctrl {
+            height: 28px;
+            min-width: 28px;
+            padding: 0 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.18s var(--ease);
+            color: rgba(255,255,255,0.38);
+            position: relative;
+        }
+
+        .ctrl:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .ctrl svg.x {
+            width: 12px; height: 12px;
+            stroke: currentColor; stroke-width: 2; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+
+        .ctrl.lang { padding: 0 5px; }
+
+        .lang-flag {
+            width: 22px; height: 15px;
+            border-radius: 3px;
+            display: block;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.5);
+            opacity: 0.85;
+            transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+        }
+
+        .ctrl.lang:hover .lang-flag {
+            opacity: 1;
+            transform: scale(1.08);
+        }
+
+        /* ======== CLOSE BUTTON ======== */
+        .ctrl.close {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s var(--ease), background 0.18s var(--ease), color 0.18s var(--ease);
+            will-change: transform;
+        }
+
+        .ctrl.close .close-fill {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            transform: scaleX(0);
+            transform-origin: left center;
+            transition: transform 0.05s linear;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ctrl.close svg { position: relative; z-index: 1; }
+
+        .ctrl.close.holding {
+            color: #fff;
+            background: rgba(239,68,68,0.1);
+            box-shadow: 0 0 16px rgba(239,68,68,0.3);
+        }
+
+        .ctrl.close.holding .close-fill {
+            transform: scaleX(var(--hold, 0));
+        }
+
+        .close-burst {
+            position: fixed;
+            pointer-events: none;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239,68,68,0.9);
+            z-index: 9999;
+            animation: burstFly 0.6s ease-out forwards;
+        }
+
+        @keyframes burstFly {
+            0%   { transform: translate(0,0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--bx),var(--by)) scale(0.2); opacity: 0; }
+        }
+
+        /* ======== HEADER ======== */
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+            padding-top: 6px;
+        }
+
+        .brand-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 16px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            overflow: hidden;
+            animation: brandPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes brandPulse {
+            0%, 100% { box-shadow: none; }
+            50% { box-shadow: 0 0 10px rgba(14,165,233,0.06); }
+        }
+
+        .brand-mark::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 13px;
+            padding: 1px;
+            background: linear-gradient(180deg, rgba(14,165,233,0.3), transparent 70%);
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .brand-mark img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+            display: block;
+        }
+
+        .title {
+            font-family: 'Geist', 'Inter', system-ui, sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.6px;
+            line-height: 1;
+            color: #fff;
+        }
+
+        .title .accent {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .tagline {
+            margin-top: 8px;
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 0.2px;
+        }
+
+        /* ======== FORM ======== */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .field { position: relative; }
+
+        .field-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px; height: 14px;
+            color: rgba(255,255,255,0.25);
+            pointer-events: none;
+            transition: 0.25s var(--ease);
+            z-index: 2;
+        }
+
+        .field-icon svg {
+            width: 100%; height: 100%;
+            stroke: currentColor; stroke-width: 1.8; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+
+        .field { position: relative; }
+
+        .field-input {
+            width: 100%;
+            padding: 13px 14px 13px 36px;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--r-md);
+            color: transparent;
+            caret-color: #fff;
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.3s var(--ease);
+            -webkit-user-select: text;
+            user-select: text;
+            position: relative;
+            z-index: 2;
+        }
+
+        .field-input::placeholder { color: rgba(255,255,255,0.25); }
+
+        .field-input:hover {
+            background: rgba(255,255,255,0.035);
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        @keyframes borderPulse {
+            0% { border-color: rgba(255,255,255,0.25); box-shadow: 0 0 0 0 rgba(255,255,255,0.04); }
+            50% { border-color: rgba(255,255,255,0.5); box-shadow: 0 0 0 4px rgba(255,255,255,0.08); }
+            100% { border-color: rgba(255,255,255,0.25); box-shadow: 0 0 0 0 rgba(255,255,255,0.04); }
+        }
+
+        .field-input:focus {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.35);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+            animation: borderPulse 2s ease-in-out infinite;
+        }
+
+        .field-input:focus ~ .field-icon { color: rgba(255,255,255,0.7); }
+
+        .field-display {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            padding: 13px 14px 13px 36px;
+            display: flex;
+            align-items: center;
+            pointer-events: none;
+            z-index: 1;
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: 500;
+            overflow: hidden;
+        }
+
+        @keyframes charIn {
+            0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes charOut {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-6px) scale(0.9); }
+        }
+
+        .char { display: inline-block; white-space: pre; }
+        .char-in { animation: charIn 0.2s ease-out both; }
+        .char-out { animation: charOut 0.15s ease-in both; }
+
+        .pw-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            width: 28px; height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: rgba(255,255,255,0.28);
+            transition: 0.18s var(--ease);
+            z-index: 2;
+        }
+
+        .pw-toggle:hover {
+            color: rgba(255,255,255,0.85);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .pw-toggle svg {
+            position: absolute;
+            width: 14px; height: 14px;
+            stroke: currentColor; stroke-width: 1.8; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .pw-toggle .eye-open { opacity: 1; transform: scale(1) rotate(0deg); }
+        .pw-toggle .eye-closed { opacity: 0; transform: scale(0.5) rotate(-90deg); }
+        .pw-toggle.showing .eye-open { opacity: 0; transform: scale(0.5) rotate(90deg); }
+        .pw-toggle.showing .eye-closed { opacity: 1; transform: scale(1) rotate(0deg); }
+
+        .field.pw .field-input { padding-right: 40px; }
+
+        /* ======== REMEMBER ROW ======== */
+        .row {
+            display: flex;
+            align-items: center;
+            margin: 8px 0 6px;
+        }
+
+        .remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 2px 0;
+        }
+
+        .r-box {
+            width: 15px; height: 15px;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s var(--ease);
+            background: transparent;
+            flex-shrink: 0;
+        }
+
+        .r-box svg {
+            width: 9px; height: 9px;
+            stroke: #050506; stroke-width: 3; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 20; stroke-dashoffset: 20;
+            transition: stroke-dashoffset 0.25s var(--ease) 0.05s;
+        }
+
+        .r-box.checked {
+            background: #fff;
+            border-color: transparent;
+            box-shadow: 0 0 8px rgba(255,255,255,0.15);
+        }
+
+        .r-box.checked svg { stroke: #000; stroke-dashoffset: 0; }
+
+        .r-text {
+            font-size: 11.5px;
+            color: var(--c-muted);
+            font-weight: 500;
+        }
+
+        .remember:hover .r-text { color: rgba(255,255,255,0.75); }
+        .remember:hover .r-box:not(.checked) { border-color: rgba(255,255,255,0.4); }
+
+        /* ======== SUBMIT BUTTON ======== */
+        .submit-btn {
+            width: 100%;
+            margin-top: 6px;
+            padding: 13px;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: var(--r-md);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.1px;
+            font-family: inherit;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s var(--ease);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 44px;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15));
+            opacity: 0;
+            transition: opacity 0.3s var(--ease);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px -4px rgba(8,145,178,0.2);
+        }
+
+        .submit-btn:hover:not(:disabled)::before { opacity: 1; }
+
+        .submit-btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(14,165,233,0.3);
+        }
+
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-arrow {
+            display: inline-flex;
+            transition: transform 0.3s var(--ease);
+        }
+
+        .submit-btn:hover:not(:disabled) .btn-arrow { transform: translateX(4px); }
+
+        .submit-btn.loading .btn-text,
+        .submit-btn.loading .btn-arrow { opacity: 0; }
+
+        .spinner {
+            position: absolute;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            animation: spin 0.6s linear infinite;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .submit-btn.loading .spinner { opacity: 1; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ======== SOCIAL FOOTER ======== */
+        .footer {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 22px;
+        }
+
+        .social {
+            flex: 0 0 auto;
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s var(--ease);
+        }
+
+        .social:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 0 10px rgba(255,255,255,0.06);
+        }
+
+        .social img {
+            width: 12px; height: 12px;
+            opacity: 0.35;
+            transition: 0.25s var(--ease);
+            filter: brightness(0) invert(1);
+        }
+
+        .social:hover img { opacity: 0.9; }
+
+        /* ======== NOTIFICATION ======== */
+        #notif {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-16px);
+            padding: 8px 14px 8px 12px;
+            background: rgba(239,68,68,0.12);
+
+            border: 1px solid rgba(239,68,68,0.2);
+            color: rgba(255,255,255,0.9);
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 9px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s var(--ease);
+            white-space: pre-line;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 20px rgba(239,68,68,0.15);
+        }
+
+        #notif::before {
+            content: '';
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: #ef4444;
+            flex-shrink: 0;
+            animation: notifPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes notifPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        #notif.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div id="notif"><span id="notifText">Invalid credentials</span></div>
+
+        <div class="ctrls">
+            <div class="ctrl lang" onclick="cycleLang()" id="lang-btn">
+                <svg class="lang-flag" id="lang-flag" viewBox="0 0 60 40" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+            <div class="ctrl close" id="closeBtn">
+                <span class="close-fill"></span>
+                <svg class="x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </div>
+        </div>
+
+        <div class="header">
+            <div class="brand-mark"><img src="logo.png" alt="Sky"></div>
+            <div class="title">Sky<span class="accent"> Client</span></div>
+            <div class="tagline" id="tagline">Sign in to continue</div>
+        </div>
+
+        <form id="loginForm" novalidate>
+            <div class="field">
+                <input type="text" id="username" class="field-input" placeholder="Username" autocomplete="off" required spellcheck="false">
+                <span class="field-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                </span>
+            </div>
+
+            <div class="field pw">
+                <input type="password" id="password" class="field-input" placeholder="Password" autocomplete="new-password" required>
+                <span class="field-icon">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                </span>
+                <div class="pw-toggle" onclick="togglePw()" id="pw-toggle">
+                    <svg class="eye-open" viewBox="0 0 24 24">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg class="eye-closed" viewBox="0 0 24 24">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="remember" onclick="toggleRemember()">
+                    <div class="r-box" id="r-box">
+                        <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+                    </div>
+                    <span class="r-text" id="r-text">Remember me</span>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="spinner"></span>
+                <span class="btn-text" id="btn-text">Continue</span>
+                <span class="btn-arrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M13 6l6 6-6 6"/>
+                    </svg>
+                </span>
+            </button>
+        </form>
+
+        <form id="twofaForm" novalidate style="display:none">
+            <div style="text-align:center;margin-bottom:14px;font-size:12px;color:#8890a0">
+                <span id="twofa-hint">Введите 6-значный код из Google Authenticator</span>
+            </div>
+            <div class="field">
+                <input type="text" id="twofa-code" class="field-input" placeholder="000000" autocomplete="off" required spellcheck="false" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" style="letter-spacing:8px;text-align:center;font-size:20px;font-weight:600">
+                <span class="field-icon">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+            </div>
+            <button type="submit" class="submit-btn" id="twofaSubmitBtn">
+                <span class="spinner"></span>
+                <span class="btn-text" id="twofa-btn-text">Подтвердить</span>
+                <span class="btn-arrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M13 6l6 6-6 6"/>
+                    </svg>
+                </span>
+            </button>
+            <div style="text-align:center;margin-top:10px">
+                <a href="#" id="twofa-cancel" style="color:#8890a0;font-size:12px;text-decoration:none">Отмена</a>
+            </div>
+        </form>
+
+        <div class="footer">
+            <div class="social" onclick="wv('open_discord')">
+                <img src="discord.svg" alt="discord">
+            </div>
+            <div class="social" onclick="wv('open_support')">
+                <img src="telegram.svg" alt="telegram">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function wv(msg) { try { window.chrome.webview.postMessage(msg); } catch (e) {} }
+
+        // ===== Close button: runaway + hold-to-close =====
+        (function setupCloseBtn() {
+            const btn = document.getElementById('closeBtn');
+            if (!btn) return;
+
+            let offX = 0, offY = 0;
+            function resetPos() { offX = 0; offY = 0; btn.style.transform = 'translate(0,0)'; }
+
+            document.addEventListener('mousemove', (e) => {
+                if (btn.classList.contains('holding')) return;
+                const r = btn.getBoundingClientRect();
+                const cx = r.left + r.width / 2;
+                const cy = r.top + r.height / 2;
+                const dx = e.clientX - cx;
+                const dy = e.clientY - cy;
+                const dist = Math.hypot(dx, dy);
+                const TRIGGER = 75;
+                const MAX_PUSH = 30;
+                if (dist < TRIGGER) {
+                    const push = (TRIGGER - dist) / TRIGGER;
+                    const mag = MAX_PUSH * push;
+                    const ang = Math.atan2(dy, dx);
+                    offX = -Math.cos(ang) * mag;
+                    offY = -Math.sin(ang) * mag * 0.45;
+                    btn.style.transform = `translate(${offX}px, ${offY}px)`;
+                } else if (dist > TRIGGER + 30) {
+                    resetPos();
+                }
+            });
+
+            const HOLD_MS = 650;
+            let holdStart = 0, holdRAF = 0;
+
+            function stopHold() {
+                cancelAnimationFrame(holdRAF);
+                btn.classList.remove('holding');
+                btn.style.setProperty('--hold', 0);
+                holdStart = 0;
+            }
+
+            function tickHold() {
+                if (!holdStart) return;
+                const p = Math.min(1, (performance.now() - holdStart) / HOLD_MS);
+                btn.style.setProperty('--hold', p);
+                if (p >= 1) {
+                    stopHold();
+                    spawnBurst(btn);
+                    setTimeout(() => wv('close_window'), 280);
+                    return;
+                }
+                holdRAF = requestAnimationFrame(tickHold);
+            }
+
+            btn.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                resetPos();
+                holdStart = performance.now();
+                btn.classList.add('holding');
+                holdRAF = requestAnimationFrame(tickHold);
+            });
+
+            const cancel = () => { if (holdStart) stopHold(); };
+            btn.addEventListener('mouseup', cancel);
+            btn.addEventListener('mouseleave', cancel);
+            window.addEventListener('blur', cancel);
+        })();
+
+        function spawnBurst(el) {
+            const r = el.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            const COUNT = 16;
+            for (let i = 0; i < COUNT; i++) {
+                const p = document.createElement('div');
+                p.className = 'close-burst';
+                const ang = (Math.PI * 2) * (i / COUNT) + (Math.random() - 0.5) * 0.5;
+                const dist = 45 + Math.random() * 45;
+                p.style.left = cx + 'px';
+                p.style.top = cy + 'px';
+                p.style.setProperty('--bx', Math.cos(ang) * dist + 'px');
+                p.style.setProperty('--by', Math.sin(ang) * dist + 'px');
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 650);
+            }
+        }
+
+        // ===== i18n =====
+        const T = {
+            en: {
+                btn: 'Continue', rem: 'Remember me', err: 'Invalid credentials',
+                tag: 'Sign in to continue',
+                phUser: 'Username', phPass: 'Password'
+            },
+            ru: {
+                btn: 'Продолжить', rem: 'Запомнить меня', err: 'Неверные данные',
+                tag: 'Войдите, чтобы продолжить',
+                phUser: 'Логин', phPass: 'Пароль'
+            }
+        };
+        let lang = 'ru';
+
+        const FLAGS = {
+            en:
+                '<defs><clipPath id="f-gb"><rect width="60" height="40"/></clipPath></defs>' +
+                '<g clip-path="url(#f-gb)">' +
+                  '<rect width="60" height="40" fill="#012169"/>' +
+                  '<path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"/>' +
+                  '<path d="M0,0 L30,20 M30,20 L60,40" stroke="#C8102E" stroke-width="4" transform="translate(0,2)"/>' +
+                  '<path d="M30,20 L60,0 M0,40 L30,20" stroke="#C8102E" stroke-width="4" transform="translate(0,-2)"/>' +
+                  '<rect x="25" width="10" height="40" fill="#fff"/>' +
+                  '<rect y="15" width="60" height="10" fill="#fff"/>' +
+                  '<rect x="27" width="6" height="40" fill="#C8102E"/>' +
+                  '<rect y="17" width="60" height="6" fill="#C8102E"/>' +
+                '</g>',
+            ru:
+                '<rect width="60" height="13.33" y="0"     fill="#fff"/>' +
+                '<rect width="60" height="13.33" y="13.33" fill="#0039A6"/>' +
+                '<rect width="60" height="13.34" y="26.66" fill="#D52B1E"/>'
+        };
+
+        function paintFlag() {
+            const svg = document.getElementById('lang-flag');
+            if (svg) svg.innerHTML = FLAGS[lang];
+        }
+        function applyLang() {
+            paintFlag();
+            const t = T[lang];
+            document.getElementById('btn-text').textContent = t.btn;
+            document.getElementById('r-text').textContent = t.rem;
+            document.getElementById('notifText').textContent = t.err;
+            document.getElementById('tagline').textContent = t.tag;
+            document.getElementById('username').placeholder = t.phUser;
+            document.getElementById('password').placeholder = t.phPass;
+        }
+        applyLang();
+
+        function cycleLang() {
+            lang = lang === 'en' ? 'ru' : 'en';
+            applyLang();
+        }
+
+        function togglePw() {
+            const p = document.getElementById('password');
+            const t = document.getElementById('pw-toggle');
+            const isPw = p.type === 'password';
+            p.type = isPw ? 'text' : 'password';
+            t.classList.toggle('showing', !isPw);
+        }
+
+        let remember = false;
+        function toggleRemember() {
+            remember = !remember;
+            document.getElementById('r-box').classList.toggle('checked', remember);
+        }
+
+        let notifTimer;
+        function showNotif() {
+            const n = document.getElementById('notif');
+            clearTimeout(notifTimer);
+            n.classList.add('show');
+            notifTimer = setTimeout(() => n.classList.remove('show'), 2500);
+        }
+
+        // ===== Login =====
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            if (btn.disabled) return;
+
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p, hwid: window.skyguard_hwid || '' }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                let data = {};
+                try { data = await response.json(); } catch (parseErr) { /* ignore */ }
+
+                // 2FA challenge: backend returned {ok, requires_2fa, temp_token, uid}.
+                // Switch UI to 2FA form and remember credentials for verify step.
+                if (response.ok && data.ok && data.requires_2fa) {
+                    window._pending2FA = {
+                        temp_token: data.temp_token,
+                        uid: data.uid,
+                        username: u,
+                        password: p,
+                        remember: remember
+                    };
+                    document.getElementById('loginForm').style.display = 'none';
+                    const tf = document.getElementById('twofaForm');
+                    tf.style.display = 'block';
+                    const codeInput = document.getElementById('twofa-code');
+                    codeInput.value = '';
+                    setTimeout(() => codeInput.focus(), 50);
+                    return;
+                }
+
+                if (response.ok && data.ok && data.user) {
+                    if (!data.user.has_subscription && !data.user.frozen_at) {
+                        const notifText = document.getElementById('notifText');
+                        notifText.textContent = 'Нет подписки';
+                        showNotif();
+                        return;
+                    }
+                    localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                        login: data.user.login,
+                        nickname: data.user.username,
+                        uid: data.user.uid,
+                        session_token: data.session_token || '',
+                        hasSubscription: data.user.has_subscription,
+                        subs_till: data.user.subs_till,
+                        freeze_count: data.user.freeze_count || 0,
+                        frozen_at: data.user.frozen_at || null,
+                        is_admin: data.user.is_admin,
+                        admin_ids: data.user.admin_ids || [],
+                        api_key: data.user.api_key || '',
+                        loader_settings: data.user.loader_settings || null
+                    }));
+                    if (remember) wv('save_remember_data:' + JSON.stringify({ username: u, password: p }));
+                    wv('navigate_to_profile');
+                    if (!window.chrome || !window.chrome.webview) {
+                        window.location.href = 'profile.html';
+                    }
+                    return;
+                }
+                const notifText = document.getElementById('notifText');
+                notifText.innerText = data.detail || data.error || 'Нет подписки';
+                showNotif();
+            } catch (err) {
+                const notifText = document.getElementById('notifText');
+                if (err.name === 'AbortError') {
+                    notifText.textContent = 'Таймаут запроса';
+                } else {
+                    notifText.textContent = 'Ошибка соединения';
+                }
+                showNotif();
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+            }
+        };
+
+        // ===== 2FA verification =====
+        document.getElementById('twofaForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('twofaSubmitBtn');
+            if (btn.disabled) return;
+            const codeEl = document.getElementById('twofa-code');
+            const code = (codeEl.value || '').trim();
+            if (!/^\d{6}$/.test(code)) {
+                const notifText = document.getElementById('notifText');
+                notifText.textContent = 'Введите 6 цифр';
+                showNotif();
+                return;
+            }
+            const ctx = window._pending2FA;
+            if (!ctx) {
+                document.getElementById('twofaForm').style.display = 'none';
+                document.getElementById('loginForm').style.display = 'block';
+                return;
+            }
+            btn.classList.add('loading');
+            btn.disabled = true;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                const response = await fetch('/api/auth/verify-2fa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        temp_token: ctx.temp_token,
+                        code: code,
+                        uid: ctx.uid,
+                        hwid: window.skyguard_hwid || ''
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                let data = {};
+                try { data = await response.json(); } catch (parseErr) { /* ignore */ }
+
+                if (response.ok && data.ok && data.user) {
+                    if (!data.user.has_subscription && !data.user.frozen_at) {
+                        const notifText = document.getElementById('notifText');
+                        notifText.textContent = 'Нет подписки';
+                        showNotif();
+                        return;
+                    }
+                    localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                        login: data.user.login,
+                        nickname: data.user.username,
+                        uid: data.user.uid,
+                        session_token: data.session_token || '',
+                        hasSubscription: data.user.has_subscription,
+                        subs_till: data.user.subs_till,
+                        freeze_count: data.user.freeze_count || 0,
+                        frozen_at: data.user.frozen_at || null,
+                        is_admin: data.user.is_admin,
+                        admin_ids: data.user.admin_ids || [],
+                        api_key: data.user.api_key || '',
+                        loader_settings: data.user.loader_settings || null
+                    }));
+                    if (ctx.remember) wv('save_remember_data:' + JSON.stringify({ username: ctx.username, password: ctx.password }));
+                    window._pending2FA = null;
+                    wv('navigate_to_profile');
+                    if (!window.chrome || !window.chrome.webview) {
+                        window.location.href = 'profile.html';
+                    }
+                    return;
+                }
+                const notifText = document.getElementById('notifText');
+                notifText.innerText = data.detail || data.error || 'Неверный код';
+                showNotif();
+            } catch (err) {
+                const notifText = document.getElementById('notifText');
+                notifText.textContent = err.name === 'AbortError' ? 'Таймаут запроса' : 'Ошибка соединения';
+                showNotif();
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+            }
+        };
+
+        document.getElementById('twofa-cancel').onclick = (e) => {
+            e.preventDefault();
+            window._pending2FA = null;
+            document.getElementById('twofaForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('twofa-code').value = '';
+        };
+
+        // Numeric-only input on 2FA field
+        document.getElementById('twofa-code').addEventListener('input', function(ev) {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+        });
+
+        // ===== Drag =====
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.tagName !== 'INPUT'
+                && e.target.tagName !== 'BUTTON'
+                && !e.target.closest('button')
+                && !e.target.closest('.social')
+                && !e.target.closest('.ctrl')
+                && !e.target.closest('.pw-toggle')
+                && !e.target.closest('.remember')) {
+                wv('start_drag');
+            }
+        });
+
+        // ===== Auto login =====
+        window.addEventListener('message', (e) => {
+            if (typeof e.data !== 'string') return;
+            if (e.data.startsWith('remembered_data:')) {
+                try {
+                    const d = JSON.parse(e.data.substring(16));
+                    document.getElementById('username').value = d.username;
+                    document.getElementById('password').value = d.password;
+                    remember = true;
+                    document.getElementById('r-box').classList.add('checked');
+                } catch (err) {}
+            } else if (e.data === 'auto_login') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        window.addEventListener('load', () => {
+            setTimeout(() => wv('check_remember_data'), 100);
+        });
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'C', 'J'].includes(e.key))) {
+                e.preventDefault();
+            }
+        });
+
+        document.querySelectorAll('.field-input').forEach(inp => {
+            const display = document.createElement('div');
+            display.className = 'field-display';
+            inp.parentNode.appendChild(display);
+
+            let prevVal = inp.value;
+
+            function refresh() {
+                const curVal = inp.value;
+                const isPw = inp.type === 'password';
+                const dot = ch => isPw ? '•' : ch;
+
+                let diff = 0;
+                while (diff < prevVal.length && diff < curVal.length && prevVal[diff] === curVal[diff]) diff++;
+
+                display.innerHTML = '';
+                for (let i = 0; i < diff && i < curVal.length; i++) {
+                    const s = document.createElement('span');
+                    s.className = 'char';
+                    s.textContent = dot(curVal[i]);
+                    s.style.opacity = '1';
+                    display.appendChild(s);
+                }
+                for (let i = diff; i < curVal.length; i++) {
+                    const s = document.createElement('span');
+                    s.className = 'char char-in';
+                    s.textContent = dot(curVal[i]);
+                    s.style.animationDelay = ((i - diff) * 25) + 'ms';
+                    display.appendChild(s);
+                }
+                if (curVal.length < prevVal.length && diff < prevVal.length) {
+                    const s = document.createElement('span');
+                    s.className = 'char char-out';
+                    s.textContent = dot(prevVal[diff]);
+                    s.addEventListener('animationend', () => s.remove());
+                    display.appendChild(s);
+                }
+                prevVal = curVal;
+            }
+
+            inp.addEventListener('input', refresh);
+            refresh();
+
+            const _togglePw = togglePw;
+            togglePw = function() {
+                _togglePw();
+                const pw = document.getElementById('password');
+                const d = pw.parentNode.querySelector('.field-display');
+                if (d) {
+                    const isPw = pw.type === 'password';
+                    const dot = ch => isPw ? '•' : ch;
+                    d.innerHTML = '';
+                    for (let i = 0; i < pw.value.length; i++) {
+                        const s = document.createElement('span');
+                        s.className = 'char char-in';
+                        s.textContent = dot(pw.value[i]);
+                        s.style.animationDelay = (i * 20) + 'ms';
+                        d.appendChild(s);
+                    }
+                }
+            };
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!-- Добавьте этот код в ваш profile.html перед закрывающим тегом </body> -->
+
+<!-- Подключение скрипта лаунчера -->
+<script src="minecraft_launcher.js"></script>
+
+<!-- Пример кнопки запуска (если её ещё нет) -->
+<!-- 
+<button class="launch-btn" onclick="launchMinecraft()">
+    Запустить Minecraft 26.2
+</button>
+-->
+
+<!-- Стили для кнопки (если нужны дополнительные) -->
+<style>
+.launch-btn {
+    width: 100%;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.launch-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.launch-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.launch-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Анимация загрузки */
+.launch-btn.loading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 8px;
+    border: 2px solid #ffffff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>

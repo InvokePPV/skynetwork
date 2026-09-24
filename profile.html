@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <style>
+        *, *::before, *::after {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --c-text: #f4f4f5;
+            --c-muted: rgba(255,255,255,0.5);
+            --c-border: rgba(255,255,255,0.06);
+            --c-border-hi: rgba(255,255,255,0.12);
+            --c-field: rgba(255,255,255,0.025);
+            --r-lg: 16px;
+            --r-md: 10px;
+            --ease: cubic-bezier(0.22,1,0.36,1);
+        }
+
+        html { background: transparent; }
+        html, body { height: 100%; margin: 0; }
+
+        body {
+            font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+            color: var(--c-text);
+            overflow: hidden;
+            background: #000000;
+            border-radius: 48px;
+            height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            font-weight: 700;
+        }
+
+        .card {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            padding: 12px 14px 6px;
+            background: #000000;
+            border: none;
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .ctrls {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 4;
+        }
+
+        .ctrl {
+            height: 28px;
+            min-width: 28px;
+            padding: 0 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.18s var(--ease);
+            color: rgba(255,255,255,0.38);
+            position: relative;
+        }
+
+        .ctrl:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .ctrl svg.x {
+            width: 12px; height: 12px;
+            stroke: currentColor; stroke-width: 2; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+
+        .ctrl.lang { padding: 0 5px; }
+
+        .lang-flag {
+            width: 22px; height: 15px;
+            border-radius: 3px;
+            display: block;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.5);
+            opacity: 0.85;
+            transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+        }
+
+        .ctrl.lang:hover .lang-flag {
+            opacity: 1;
+            transform: scale(1.08);
+        }
+
+        .ctrl.close {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ctrl.close .close-fill {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            transform: scaleX(0);
+            transform-origin: left center;
+            transition: transform 0.05s linear;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ctrl.close svg { position: relative; z-index: 1; }
+
+        .ctrl.close.holding {
+            color: #fff;
+            background: rgba(239,68,68,0.1);
+            box-shadow: 0 0 16px rgba(239,68,68,0.3);
+        }
+
+        .ctrl.close.holding .close-fill {
+            transform: scaleX(var(--hold, 0));
+        }
+
+        .close-burst {
+            position: fixed;
+            pointer-events: none;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239,68,68,0.9);
+            z-index: 9999;
+            animation: burstFly 0.6s ease-out forwards;
+        }
+
+        @keyframes burstFly {
+            0%   { transform: translate(0,0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--bx),var(--by)) scale(0.2); opacity: 0; }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .brand-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 10px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
+        }
+
+        .brand-mark img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+            display: block;
+        }
+
+        .title {
+            font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            line-height: 1;
+            color: #fff;
+        }
+
+        .user-name {
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--c-muted);
+        }
+
+        .products {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 10px;
+            margin-top: 10px;
+            padding: 4px 0;
+        }
+
+        .product-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            min-height: 52px;
+            background: var(--c-field);
+            border: 1px solid var(--c-border);
+            border-radius: var(--r-md);
+            cursor: pointer;
+            transition: all 0.3s var(--ease);
+            position: relative;
+        }
+
+        .product-card:hover:not(.disabled) {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .product-card.selected {
+            border-color: rgba(8,145,178,0.35);
+            background: rgba(255,255,255,0.04);
+            box-shadow: 0 0 0 3px rgba(8,145,178,0.06);
+        }
+
+        .product-card.selected:hover {
+            border-color: rgba(8,145,178,0.5);
+        }
+
+        .product-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        #skyVersion.disabled {
+            opacity: 1;
+        }
+
+        #skyVersion.disabled .product-icon,
+        #skyVersion.disabled .product-name {
+            opacity: 0.45;
+        }
+
+        .product-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
+        }
+
+        .product-icon.minecraft {
+            background: #5a8c38;
+        }
+
+        .product-icon.minecraft img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+        }
+
+        .product-icon.cs2 {
+            background: none;
+        }
+
+        .product-icon.cs2 img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+            display: block;
+        }
+
+        .product-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.2px;
+            line-height: 1;
+        }
+
+        .product-subscription {
+            margin-left: auto;
+            padding: 4px 8px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .product-subscription.active {
+            color: #22c55e;
+            background: rgba(34,197,94,0.12);
+            border-color: rgba(34,197,94,0.22);
+        }
+
+        .product-subscription.frozen {
+            color: #38bdf8;
+            background: rgba(14,165,233,0.14);
+            border-color: rgba(56,189,248,0.25);
+        }
+
+        .product-subscription.inactive {
+            color: rgba(255,255,255,0.55);
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.09);
+        }
+
+        .product-card.disabled .product-name {
+            color: rgba(255,255,255,0.6);
+        }
+ 
+        .bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            z-index: 2;
+        }
+
+        .social-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .social {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s var(--ease);
+        }
+
+        .social:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .social img {
+            width: 14px; height: 14px;
+            opacity: 0.35;
+            transition: 0.25s var(--ease);
+            filter: brightness(0) invert(1);
+        }
+
+        .social:hover img { opacity: 0.9; }
+
+        .action-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            background: var(--c-field);
+            border: 1px solid var(--c-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s var(--ease);
+            color: rgba(255,255,255,0.5);
+        }
+
+        .action-btn:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--c-border-hi);
+            color: rgba(255,255,255,0.85);
+        }
+
+        .action-btn svg {
+            width: 14px; height: 14px;
+            fill: currentColor;
+        }
+
+        .action-btn.logout:hover {
+            background: rgba(239,68,68,0.1);
+            border-color: rgba(239,68,68,0.3);
+            color: #ef4444;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 1;
+            transition: opacity 0.5s var(--ease);
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .main-content {
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+        }
+
+        .main-content.ready {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2.5px solid rgba(255,255,255,0.1);
+            border-top-color: rgba(255,255,255,0.6);
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: var(--c-muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .logout-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 15;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s var(--ease);
+        }
+
+        .logout-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .logout-text {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logout-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .logout-no, .logout-yes {
+            padding: 10px 28px;
+            border: none;
+            border-radius: var(--r-md);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s var(--ease);
+        }
+
+        .logout-no {
+            background: linear-gradient(135deg, #0891b2, #0ea5e9);
+            color: #fff;
+        }
+
+        .logout-no:hover {
+            box-shadow: 0 4px 12px rgba(8,145,178,0.3);
+        }
+
+        .logout-yes {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+
+        .logout-yes:hover {
+            background: rgba(239,68,68,0.25);
+        }
+
+        .settings-page {
+            position: absolute;
+            inset: 0;
+            padding: 12px 14px 8px;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 12;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(20px);
+            transition: all 0.35s var(--ease);
+            pointer-events: none;
+        }
+
+        .settings-page.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .main-content {
+            position: absolute;
+            top: 12px;
+            left: 14px;
+            right: 14px;
+            bottom: 48px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+        }
+
+        .main-content.hidden {
+            opacity: 0;
+            transform: translateX(-20px);
+            pointer-events: none;
+        }
+
+        .settings-title {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            margin-bottom: 16px;
+            margin-top: 4px;
+        }
+
+        .settings-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.06) transparent;
+            padding-right: 4px;
+        }
+
+        .settings-content::-webkit-scrollbar { width: 4px; }
+        .settings-content::-webkit-scrollbar-track { background: transparent; }
+        .settings-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+
+        .setting-group {
+            background: var(--c-field);
+            border: 1px solid var(--c-border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .setting-title {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .setting-desc {
+            color: var(--c-muted);
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .setting-row:last-child { margin-bottom: 0; }
+
+        .setting-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .s-input {
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.2s var(--ease);
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .s-input:focus {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(8,145,178,0.35);
+            box-shadow: 0 0 0 3px rgba(8,145,178,0.06);
+        }
+
+        .s-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .s-input::-webkit-outer-spin-button,
+        .s-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .s-input[type=number] { -moz-appearance: textfield; }
+
+        .ram-input { width: 80px; text-align: center; }
+        .res-input { width: 70px; text-align: center; }
+        .folder-input { flex: 1; min-width: 0; font-size: 11px; text-overflow: ellipsis; }
+        .browse-btn {
+            height: 36px;
+            padding: 0 13px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--r-md);
+            background: rgba(255,255,255,0.05);
+            color: var(--c-text);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s var(--ease);
+        }
+        .browse-btn:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.14);
+        }
+
+        .s-unit {
+            color: var(--c-muted);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .res-sep {
+            color: var(--c-muted);
+            font-size: 14px;
+        }
+
+        .checkbox-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .cbox {
+            width: 15px; height: 15px;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s var(--ease);
+            background: transparent;
+            flex-shrink: 0;
+        }
+
+        .cbox svg {
+            width: 9px; height: 9px;
+            stroke: #050506; stroke-width: 3; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 20; stroke-dashoffset: 20;
+            transition: stroke-dashoffset 0.25s var(--ease) 0.05s;
+        }
+
+        .cbox.checked {
+            background: linear-gradient(135deg, #0891b2, #0ea5e9);
+            border-color: transparent;
+            box-shadow: 0 0 8px rgba(14,165,233,0.15);
+        }
+
+        .cbox.checked svg { stroke: #fff; stroke-dashoffset: 0; }
+
+        .cbox-text {
+            color: rgba(255,255,255,0.6);
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+
+        .settings-bottom {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .save-btn {
+            flex: 1;
+            padding: 11px;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: var(--r-md);
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s var(--ease);
+            letter-spacing: 0.1px;
+        }
+
+        .save-btn:hover:not(:disabled) {
+            box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        }
+
+        .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--c-field);
+            border: 1px solid var(--c-border);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s var(--ease);
+            flex-shrink: 0;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--c-border-hi);
+        }
+
+        .back-btn svg {
+            width: 16px; height: 16px;
+            fill: rgba(255,255,255,0.6);
+        }
+
+        .launch-modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 25;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s var(--ease);
+        }
+
+        .launch-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: #000000;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            min-width: 260px;
+            transform: scale(0.9);
+            transition: transform 0.35s var(--ease);
+        }
+
+        .launch-modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-spinner {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            border: 2.5px solid rgba(255,255,255,0.1);
+            border-top-color: rgba(255,255,255,0.6);
+            animation: spin 0.8s linear infinite;
+        }
+
+        .modal-status {
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+            min-height: 20px;
+            background: linear-gradient(90deg, #ffffff 0%, #000000 50%, #ffffff 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .file-name {
+            color: rgba(255,255,255,0.4);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="ctrls">
+            <div class="ctrl lang" onclick="cycleLang()" id="lang-btn">
+                <svg class="lang-flag" id="lang-flag" viewBox="0 0 60 40" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+            <div class="ctrl close" id="closeBtn">
+                <span class="close-fill"></span>
+                <svg class="x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </div>
+        </div>
+
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loadingText" data-text="loading">Loading profile...</div>
+        </div>
+
+        <div class="logout-overlay" id="logoutOverlay">
+            <div class="logout-text" data-text="logout_confirm">Are you sure you want to logout?</div>
+            <div class="logout-buttons">
+                <button class="logout-no" id="logoutNoBtn" data-text="no">No</button>
+                <button class="logout-yes" id="logoutYesBtn" data-text="yes">Yes</button>
+            </div>
+        </div>
+
+        <div class="main-content" id="mainContent">
+            <div class="header">
+                <div class="brand-mark" id="userAvatar"><img src="logo.png" alt="Sky" id="userAvatarImg"></div>
+                <div class="title" id="userTitle"></div>
+                <div class="user-name" id="userUid"></div>
+            </div>
+
+            <div class="products">
+                <div class="product-card" id="skyVersion" data-version="release">
+                    <div class="product-icon minecraft"><img src="/api/loader/mc_icon.png?v=20260713-miniapp-flat" alt="Minecraft"></div>
+                    <span class="product-name" data-text="version_release">Minecraft 26.2</span>
+                    <span class="product-subscription" id="skySubscriptionStatus"></span>
+                </div>
+                <div class="product-card disabled" id="cs2Version" data-version="cs2">
+                    <div class="product-icon cs2"><img src="cs2.webp" alt="CS2"></div>
+                    <span class="product-name">Counter-Strike 2</span>
+                </div>
+            </div>
+
+        <div class="bottom-bar">
+            <div class="social-row">
+                <div class="social" onclick="wv('open_discord')">
+                    <img src="discord.svg" alt="discord">
+                </div>
+                <div class="social" onclick="wv('open_support')">
+                    <img src="telegram.svg" alt="telegram">
+                </div>
+            </div>
+            <div class="action-row">
+                <div class="action-btn" id="settingsBtn" title="Settings">
+                    <svg viewBox="0 0 24 24"><path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M10,22C9.75,22 9.54,21.82 9.5,21.58L9.13,18.93C8.5,18.68 7.96,18.34 7.44,17.94L4.95,18.95C4.73,19.03 4.46,18.95 4.34,18.73L2.34,15.27C2.21,15.05 2.27,14.78 2.46,14.63L4.57,12.97L4.5,12L4.57,11.03L2.46,9.37C2.27,9.22 2.21,8.95 2.34,8.73L4.34,5.27C4.46,5.05 4.73,4.96 4.95,5.05L7.44,6.05C7.96,5.66 8.5,5.32 9.13,5.07L9.5,2.42C9.54,2.18 9.75,2 10,2H14C14.25,2 14.46,2.18 14.5,2.42L14.87,5.07C15.5,5.32 16.04,5.66 16.56,6.05L19.05,5.05C19.27,4.96 19.54,5.05 19.66,5.27L21.66,8.73C21.79,8.95 21.73,9.22 21.54,9.37L19.43,11.03L19.5,12L19.43,12.97L21.54,14.63C21.73,14.78 21.79,15.05 21.66,15.27L19.66,18.73C19.54,18.95 19.27,19.04 19.05,18.95L16.56,17.95C16.04,18.34 15.5,18.68 14.87,18.93L14.5,21.58C14.46,21.82 14.25,22 14,22H10M11.25,4L10.88,6.61C9.68,6.86 8.62,7.5 7.85,8.39L5.44,7.35L4.69,8.65L6.8,10.2C6.4,11.37 6.4,12.64 6.8,13.8L4.68,15.36L5.43,16.66L7.86,15.62C8.63,16.5 9.68,17.14 10.87,17.38L11.24,20H12.76L13.13,17.39C14.32,17.14 15.37,16.5 16.14,15.62L18.57,16.66L19.32,15.36L17.2,13.81C17.6,12.64 17.6,11.37 17.2,10.2L19.31,8.65L18.56,7.35L16.15,8.39C15.38,7.5 14.32,6.86 13.12,6.62L12.75,4H11.25Z"/></svg>
+                </div>
+                <div class="action-btn logout" id="logoutBtn" title="Logout">
+                    <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div class="settings-page" id="settingsPage">
+            <div class="settings-title" data-text="settings">Settings</div>
+
+            <div class="settings-content">
+                <div class="setting-group">
+                    <div class="setting-title" data-text="client_folder">Client Folder</div>
+                    <div class="setting-desc" data-text="client_folder_desc">Folder where the client files will be downloaded</div>
+                    <div class="setting-row">
+                        <input type="text" id="folderInput" class="s-input folder-input" value="C:\SkyClient" readonly>
+                        <button class="browse-btn" id="browseFolderBtn" type="button" data-text="browse">Browse</button>
+                    </div>
+                </div>
+
+                <input type="hidden" id="ramInput" value="4096">
+                <input type="hidden" id="widthInput" value="1920">
+                <input type="hidden" id="heightInput" value="1080">
+                <div id="adaptiveRam" style="display:none"><div id="adaptiveCheckbox"></div></div>
+            </div>
+
+            <div class="settings-bottom">
+                <button class="save-btn" id="saveBtn" data-text="save">Save Configuration</button>
+                <button class="back-btn" id="backBtn">
+                    <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/></svg>
+                </button>
+            </div>
+
+        </div>
+
+        <div class="launch-modal" id="launchModal">
+            <div class="modal-content">
+                <div class="modal-spinner"></div>
+                <div class="modal-status" id="modalStatus" data-text="checking">Checking files...</div>
+                <div style="width:80%;margin:12px auto 0;background:rgba(255,255,255,0.1);border-radius:4px;height:5px;overflow:hidden;">
+                    <div id="modalProgressBar" style="width:0%;height:100%;background:#fff;border-radius:4px;transition:width 0.3s ease;"></div>
+                </div>
+                <div id="modalPercent" style="font-size:12px;color:rgba(255,255,255,0.8);text-align:center;font-weight:600;font-family:'JetBrains Mono','Inter',monospace;">0%</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function animateSlide(el, newValue, isPct) {
+            if (!el || el.textContent === newValue) return;
+            var h = isPct ? 12 : 14;
+            el.style.transition = 'transform 0.12s ease, opacity 0.12s ease';
+            el.style.transform = 'translateY(' + h + 'px)';
+            el.style.opacity = '0';
+            clearTimeout(el._anim);
+            el._anim = setTimeout(function() {
+                el.textContent = newValue;
+                el.style.transition = 'none';
+                el.style.transform = 'translateY(-' + h + 'px)';
+                el.style.opacity = '0';
+                void el.offsetHeight;
+                el.style.transition = 'transform 0.12s ease, opacity 0.12s ease';
+                el.style.transform = 'translateY(0)';
+                el.style.opacity = '1';
+            }, 130);
+        }
+
+        function wv(msg) { try { window.chrome.webview.postMessage(msg); } catch (e) {} }
+
+        var launchDotInterval = null;
+        var launchIsPending = false;
+        function startLaunchAnimation() {
+            if (launchDotInterval) clearInterval(launchDotInterval);
+            var status = document.getElementById('modalStatus');
+            if (!status) return;
+            var dots = 0;
+            var baseText = lang === 'ru' ? '\u0417\u0430\u043f\u0443\u0441\u043a' : 'Starting';
+            status.textContent = baseText;
+            launchDotInterval = setInterval(function() {
+                dots = (dots + 1) % 4;
+                status.textContent = baseText + '.'.repeat(dots);
+            }, 500);
+        }
+
+        function stopLaunchAnimation() {
+            if (launchDotInterval) {
+                clearInterval(launchDotInterval);
+                launchDotInterval = null;
+            }
+        }
+
+        (function setupCloseBtn() {
+            const btn = document.getElementById('closeBtn');
+            if (!btn) return;
+            const HOLD_MS = 650;
+            let holdStart = 0, holdRAF = 0;
+            function stopHold() {
+                cancelAnimationFrame(holdRAF);
+                btn.classList.remove('holding');
+                btn.style.setProperty('--hold', 0);
+                holdStart = 0;
+            }
+            function tickHold() {
+                if (!holdStart) return;
+                const p = Math.min(1, (performance.now() - holdStart) / HOLD_MS);
+                btn.style.setProperty('--hold', p);
+                if (p >= 1) {
+                    stopHold();
+                    spawnBurst(btn);
+                    setTimeout(() => wv('close_window'), 280);
+                    return;
+                }
+                holdRAF = requestAnimationFrame(tickHold);
+            }
+            btn.addEventListener('mousedown', function(e) {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                holdStart = performance.now();
+                btn.classList.add('holding');
+                holdRAF = requestAnimationFrame(tickHold);
+            });
+            var cancel = function() { if (holdStart) stopHold(); };
+            btn.addEventListener('mouseup', cancel);
+            btn.addEventListener('mouseleave', cancel);
+            window.addEventListener('blur', cancel);
+        })();
+
+        function spawnBurst(el) {
+            var r = el.getBoundingClientRect();
+            var cx = r.left + r.width / 2;
+            var cy = r.top + r.height / 2;
+            for (var i = 0; i < 12; i++) {
+                var p = document.createElement('div');
+                p.className = 'close-burst';
+                var ang = (Math.PI * 2) * (i / 12) + (Math.random() - 0.5) * 0.5;
+                var dist = 40 + Math.random() * 40;
+                p.style.left = cx + 'px';
+                p.style.top = cy + 'px';
+                p.style.setProperty('--bx', Math.cos(ang) * dist + 'px');
+                p.style.setProperty('--by', Math.sin(ang) * dist + 'px');
+                document.body.appendChild(p);
+                setTimeout(function() { p.remove(); }, 650);
+            }
+        }
+
+        var T = {
+            en: {
+                loading: 'Loading profile...',
+                version_release: 'Minecraft 26.2',
+                version_release_no_sub: 'No subscription',
+                version_release_days_left: '{value} left',
+                in_dev: 'In Development',
+                logout_confirm: 'Are you sure you want to logout?',
+                no: 'No',
+                yes: 'Yes',
+                settings: 'Settings',
+                client_folder: 'Client Folder',
+                client_folder_desc: 'Folder where the client files will be downloaded',
+                browse: 'Browse',
+                memory: 'Memory Allocation',
+                memory_desc: 'Configure RAM allocation for optimal performance',
+                ram: 'RAM:',
+                adaptive_ram: 'Adaptive RAM allocation during gameplay',
+                resolution: 'Screen Resolution',
+                resolution_desc: 'Set preferred screen resolution for games',
+                resolution_label: 'Resolution:',
+                save: 'Save Configuration',
+                checking: 'Checking files...',
+                downloading: 'Downloading file:',
+                launching: 'Launching...',
+                launch: 'Launch',
+                updated: 'Updated',
+                sub_until: 'Sub. until',
+                last_launch: 'Last launch',
+                never: 'Never'
+            },
+            ru: {
+                loading: '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043f\u0440\u043e\u0444\u0438\u043b\u044f...',
+                version_release: 'Minecraft 26.2',
+                version_release_no_sub: '\u041f\u043e\u0434\u043f\u0438\u0441\u043a\u0430 \u043d\u0435 \u0430\u043a\u0442\u0438\u0432\u043d\u0430',
+                version_release_days_left: '\u041e\u0441\u0442\u0430\u043b\u043e\u0441\u044c {value}',
+                in_dev: '\u0412 \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0435',
+                logout_confirm: '\u0412\u044b \u0442\u043e\u0447\u043d\u043e \u0445\u043e\u0442\u0438\u0442\u0435 \u0432\u044b\u0439\u0442\u0438?',
+                no: '\u041d\u0435\u0442',
+                yes: '\u0414\u0430',
+                settings: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438',
+                client_folder: '\u041f\u0430\u043f\u043a\u0430 \u043a\u043b\u0438\u0435\u043d\u0442\u0430',
+                client_folder_desc: '\u041f\u0430\u043f\u043a\u0430, \u0432 \u043a\u043e\u0442\u043e\u0440\u0443\u044e \u0431\u0443\u0434\u0435\u0442 \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u0442\u044c\u0441\u044f \u043a\u043b\u0438\u0435\u043d\u0442',
+                browse: '\u0412\u044b\u0431\u0440\u0430\u0442\u044c',
+                memory: '\u0412\u044b\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043f\u0430\u043c\u044f\u0442\u0438',
+                memory_desc: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u0442\u0435 \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u041e\u0417\u0423 \u0434\u043b\u044f \u043e\u043f\u0442\u0438\u043c\u0430\u043b\u044c\u043d\u043e\u0439 \u043f\u0440\u043e\u0438\u0437\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u0438',
+                ram: '\u041e\u0417\u0423:',
+                adaptive_ram: '\u0410\u0434\u0430\u043f\u0442\u0438\u0432\u043d\u043e\u0435 \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u041e\u0417\u0423 \u0432\u043e \u0432\u0440\u0435\u043c\u044f \u0438\u0433\u0440\u044b',
+                resolution: '\u0420\u0430\u0437\u0440\u0435\u0448\u0435\u043d\u0438\u0435 \u044d\u043a\u0440\u0430\u043d\u0430',
+                resolution_desc: '\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0435 \u043f\u0440\u0435\u0434\u043f\u043e\u0447\u0442\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043d\u0438\u0435 \u044d\u043a\u0440\u0430\u043d\u0430',
+                resolution_label: '\u0420\u0430\u0437\u0440\u0435\u0448\u0435\u043d\u0438\u0435:',
+                save: '\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u044e',
+                checking: '\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0444\u0430\u0439\u043b\u043e\u0432...',
+                downloading: '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0444\u0430\u0439\u043b\u0430:',
+                launching: '\u0417\u0430\u043f\u0443\u0441\u043a...',
+                launch: '\u0417\u0430\u043f\u0443\u0441\u0442\u0438\u0442\u044c',
+                updated: '\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e',
+                sub_until: '\u041f\u043e\u0434\u043f\u0438\u0441\u043a\u0430 \u0434\u043e',
+                last_launch: '\u041f\u043e\u0441\u043b. \u0437\u0430\u043f\u0443\u0441\u043a',
+                never: '\u041d\u0438\u043a\u043e\u0433\u0434\u0430'
+            }
+        };
+
+        var lang = 'ru';
+
+        var FLAGS = {
+            en:
+                '<defs><clipPath id="f-gb"><rect width="60" height="40"/></clipPath></defs>' +
+                '<g clip-path="url(#f-gb)">' +
+                  '<rect width="60" height="40" fill="#012169"/>' +
+                  '<path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"/>' +
+                  '<path d="M0,0 L30,20 M30,20 L60,40" stroke="#C8102E" stroke-width="4" transform="translate(0,2)"/>' +
+                  '<path d="M30,20 L60,0 M0,40 L30,20" stroke="#C8102E" stroke-width="4" transform="translate(0,-2)"/>' +
+                  '<rect x="25" width="10" height="40" fill="#fff"/>' +
+                  '<rect y="15" width="60" height="10" fill="#fff"/>' +
+                  '<rect x="27" width="6" height="40" fill="#C8102E"/>' +
+                  '<rect y="17" width="60" height="6" fill="#C8102E"/>' +
+                '</g>',
+            ru:
+                '<rect width="60" height="13.33" y="0"     fill="#fff"/>' +
+                '<rect width="60" height="13.33" y="13.33" fill="#0039A6"/>' +
+                '<rect width="60" height="13.34" y="26.66" fill="#D52B1E"/>'
+        };
+
+        function paintFlag() {
+            var svg = document.getElementById('lang-flag');
+            if (svg) svg.innerHTML = FLAGS[lang];
+        }
+        paintFlag();
+
+        function cycleLang() {
+            lang = lang === 'en' ? 'ru' : 'en';
+            paintFlag();
+            updateLanguage(lang);
+        }
+
+        var selectedVersion = 'release';
+        var currentNickname = '';
+        var currentSubscriptionEnd = null;
+        var hasActiveSubscription = false;
+        var isDevLoader = !!window.skyguard_dev_loader;
+        var devAccessToken = '';
+
+        function unlockDevBranch(onUnlocked) {
+            if (!isDevLoader || devAccessToken) {
+                onUnlocked();
+                return;
+            }
+            var old = document.getElementById('devBranchGate');
+            if (old) old.remove();
+            var gate = document.createElement('div');
+            gate.id = 'devBranchGate';
+            gate.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);padding:20px';
+            gate.innerHTML = '<div style="width:100%;max-width:260px;background:#111418;border:1px solid rgba(255,255,255,.09);border-radius:8px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.55)">' +
+                '<div style="font-size:15px;font-weight:700;color:#f4f4f5;margin-bottom:5px">Sky Development</div>' +
+                '<div style="font-size:12px;line-height:1.45;color:#8b929c;margin-bottom:14px">Enter the development branch password</div>' +
+                '<input id="devBranchPassword" type="password" autocomplete="off" placeholder="Password" style="box-sizing:border-box;width:100%;height:40px;border:1px solid rgba(255,255,255,.1);border-radius:6px;background:#0b0d10;color:#fff;padding:0 11px;outline:none">' +
+                '<div id="devBranchError" style="display:none;color:#fb7185;font-size:11px;margin-top:8px"></div>' +
+                '<div style="display:flex;gap:8px;margin-top:14px"><button id="devBranchCancel" type="button" style="flex:1;height:38px;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:#181b20;color:#c7cbd1;cursor:pointer">Cancel</button>' +
+                '<button id="devBranchSubmit" type="button" style="flex:1;height:38px;border:0;border-radius:6px;background:#16a34a;color:#fff;font-weight:700;cursor:pointer">Unlock</button></div></div>';
+            document.body.appendChild(gate);
+            var input = document.getElementById('devBranchPassword');
+            var submit = document.getElementById('devBranchSubmit');
+            var error = document.getElementById('devBranchError');
+            document.getElementById('devBranchCancel').onclick = function() { gate.remove(); };
+            function unlock() {
+                var stored = getStoredCurrentUser();
+                var password = input.value;
+                if (!stored || !stored.session_token || !password) return;
+                submit.disabled = true;
+                submit.textContent = 'Checking...';
+                error.style.display = 'none';
+                fetch('/api/dev/unlock', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json','X-Session-Token':stored.session_token},
+                    body: JSON.stringify({password: password})
+                }).then(function(r) { return r.json().then(function(data) { return {ok:r.ok,data:data}; }); })
+                  .then(function(result) {
+                      input.value = '';
+                      if (!result.ok || !result.data.dev_token) throw new Error(result.data.detail || 'Access denied');
+                      devAccessToken = result.data.dev_token;
+                      wv('set_dev_token:' + devAccessToken);
+                      gate.remove();
+                      onUnlocked();
+                  }).catch(function(e) {
+                      if (/session/i.test(e.message || '')) {
+                          localStorage.removeItem('skyClientCurrentUser');
+                          wv('clear_remember_data');
+                          wv('logout');
+                          return;
+                      }
+                      error.textContent = e.message || 'Access denied';
+                      error.style.display = 'block';
+                      submit.disabled = false;
+                      submit.textContent = 'Unlock';
+                      input.focus();
+                  });
+            }
+            submit.onclick = unlock;
+            input.onkeydown = function(e) { if (e.key === 'Enter') unlock(); };
+            setTimeout(function(){ input.focus(); }, 50);
+        }
+
+        function getStoredCurrentUser() {
+            try { return JSON.parse(localStorage.getItem('skyClientCurrentUser') || 'null'); }
+            catch (e) { return null; }
+        }
+
+        function parseSubscriptionDate(value) {
+            if (!value) return null;
+            var normalized = String(value).trim();
+            if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(normalized)) {
+                normalized = normalized.replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1');
+                if (!/(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized)) normalized += 'Z';
+            }
+            var d = new Date(normalized);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function getRemainingText(targetDate) {
+            var t = T[lang];
+            if (!targetDate) return t.version_release_no_sub;
+            var diff = targetDate.getTime() - Date.now();
+            if (diff <= 0) return t.version_release_no_sub;
+            if (targetDate.getFullYear() >= 9990) return 'Forever';
+            var hrs = Math.ceil(diff / 3600000);
+            if (hrs < 24) {
+                var hl = lang === 'ru' ? hrs + ' \u0447.' : hrs + 'h';
+                return t.version_release_days_left.replace('{value}', hl);
+            }
+            var days = Math.ceil(diff / 86400000);
+            var dl = lang === 'ru' ? days + ' \u0434\u043d.' : days + ' days';
+            return t.version_release_days_left.replace('{value}', dl);
+        }
+
+        function resolveSubscriptionState() {
+            var stored = getStoredCurrentUser();
+            if (!currentNickname && stored && stored.nickname) {
+                currentNickname = stored.nickname;
+            }
+            var userTitleEl = document.getElementById('userTitle');
+            if (userTitleEl) {
+                userTitleEl.textContent = currentNickname || 'Sky Client';
+            }
+            var userUidEl = document.getElementById('userUid');
+            if (userUidEl && stored && stored.uid) {
+                var uidNum = String(stored.uid).replace(/[^0-9]/g, '');
+                userUidEl.textContent = 'UID: ' + (uidNum || stored.uid);
+            }
+            if (!currentSubscriptionEnd && stored && stored.subs_till) {
+                currentSubscriptionEnd = stored.subs_till;
+            }
+            var finalDate = parseSubscriptionDate(currentSubscriptionEnd);
+            var isFrozen = !!(stored && stored.frozen_at);
+            hasActiveSubscription = !isFrozen && !!finalDate && finalDate.getTime() > Date.now();
+            var skyStatus = document.getElementById('skySubscriptionStatus');
+            if (skyStatus) {
+                skyStatus.className = 'product-subscription';
+                if (isFrozen) {
+                    skyStatus.textContent = 'Frozen';
+                    skyStatus.classList.add('frozen');
+                } else if (hasActiveSubscription) {
+                    skyStatus.textContent = getRemainingText(finalDate);
+                    skyStatus.classList.add('active');
+                } else {
+                    skyStatus.textContent = getRemainingText(finalDate);
+                    skyStatus.classList.add('inactive');
+                }
+            }
+            var skyCard = document.getElementById('skyVersion');
+            if (skyCard) {
+                skyCard.classList.toggle('disabled', isFrozen || !hasActiveSubscription);
+                skyCard.setAttribute('aria-disabled', (isFrozen || !hasActiveSubscription) ? 'true' : 'false');
+            }
+            return { frozen: isFrozen, active: hasActiveSubscription, date: finalDate };
+        }
+
+        function updateLanguage(l) {
+            lang = l;
+            document.querySelectorAll('[data-text]').forEach(function(el) {
+                var key = el.getAttribute('data-text');
+                if (T[l] && T[l][key]) el.textContent = T[l][key];
+            });
+            wv('language_changed:' + l);
+            resolveSubscriptionState();
+        }
+
+        function checkVersionAccess() {
+            var sky = document.getElementById('skyVersion');
+            var cs2 = document.getElementById('cs2Version');
+            resolveSubscriptionState();
+            selectedVersion = 'release';
+            cs2.classList.add('disabled');
+            var stored = getStoredCurrentUser();
+            if (stored && stored.uid) {
+                syncUserDataToLoader(stored);
+                fetch('/api/loader/user-state?uid=' + encodeURIComponent(stored.uid), {
+                    headers: { 'X-Session-Token': stored.session_token || '' }
+                }).then(function(r){
+                    return r.json().then(function(data){ return { ok: r.ok, data: data }; });
+                }).then(function(result){
+                    if (!result.ok) {
+                        if (/session/i.test((result.data && result.data.detail) || '')) {
+                            localStorage.removeItem('skyClientCurrentUser');
+                            wv('clear_remember_data');
+                            wv('logout');
+                        }
+                        return;
+                    }
+                    var data = result.data;
+                    if (data.ok) {
+                        stored.freeze_count = data.freeze_count;
+                        stored.frozen_at = data.frozen_at || null;
+                        stored.subs_till = data.subs_till || '';
+                        stored.hasSubscription = !!data.has_subscription;
+                        stored.loader_settings = data.loader_settings || stored.loader_settings || null;
+                        currentSubscriptionEnd = stored.subs_till || null;
+                        localStorage.setItem('skyClientCurrentUser', JSON.stringify(stored));
+                        resolveSubscriptionState();
+                        syncUserDataToLoader(stored);
+                    }
+                }).catch(function(){});
+            }
+        }
+
+        function syncUserDataToLoader(stored) {
+            if (!stored || !stored.uid) return;
+            var hwid = window.skyguard_hwid || localStorage.getItem('skyguard_hwid') || '';
+            wv('set_user_data:' + JSON.stringify({
+                uid: stored.uid || '',
+                username: stored.nickname || stored.login || '',
+                hwid: hwid,
+                session_token: stored.session_token || '',
+                subs_till: stored.subs_till || '',
+                has_subscription: !!stored.hasSubscription,
+                freeze_count: stored.freeze_count || 0,
+                frozen_at: stored.frozen_at || null,
+                is_admin: stored.is_admin || false,
+                banned: stored.banned || false,
+                loader_settings: stored.loader_settings || null
+            }));
+        }
+
+        document.querySelectorAll('.product-card').forEach(function(item) {
+            item.addEventListener('click', function() {
+                if (this.classList.contains('disabled')) return;
+                selectedVersion = this.getAttribute('data-version');
+                document.querySelectorAll('.product-card').forEach(function(c) { c.classList.remove('selected'); });
+                item.classList.add('selected');
+                var stored = getStoredCurrentUser();
+                if (!stored) return;
+                unlockDevBranch(function() {
+                    syncUserDataToLoader(stored);
+                    var modal = document.getElementById('launchModal');
+                    launchIsPending = true;
+                    modal.classList.add('show');
+                    startLaunchAnimation();
+                    setTimeout(function() { wv('launch_minecraft'); }, 500);
+                });
+            });
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            document.getElementById('logoutOverlay').classList.add('show');
+        });
+
+        document.getElementById('logoutNoBtn').addEventListener('click', function() {
+            document.getElementById('logoutOverlay').classList.remove('show');
+        });
+
+        document.getElementById('logoutYesBtn').addEventListener('click', function() {
+            document.getElementById('logoutOverlay').classList.remove('show');
+            localStorage.removeItem('skyClientCurrentUser');
+            wv('clear_remember_data');
+            wv('logout');
+        });
+
+        document.getElementById('settingsBtn').addEventListener('click', function() {
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('settingsPage').classList.add('active');
+        });
+
+        var adaptiveRam = document.getElementById('adaptiveRam');
+        var adaptiveCheckbox = document.getElementById('adaptiveCheckbox');
+        var ramInput = document.getElementById('ramInput');
+        var folderInput = document.getElementById('folderInput');
+        var isAdaptiveRam = false;
+        var originalRamValue = 4096;
+
+        function updateRamInputState() {
+            if (isAdaptiveRam) {
+                originalRamValue = parseInt(ramInput.value) || 4096;
+                ramInput.value = 'Auto';
+                ramInput.disabled = true;
+            } else {
+                ramInput.disabled = false;
+                ramInput.value = originalRamValue;
+            }
+        }
+
+        adaptiveRam.addEventListener('click', function() {
+            isAdaptiveRam = !isAdaptiveRam;
+            adaptiveCheckbox.classList.toggle('checked', isAdaptiveRam);
+            updateRamInputState();
+        });
+
+        ramInput.addEventListener('input', function() {
+            if (!isAdaptiveRam) originalRamValue = parseInt(ramInput.value) || 4096;
+        });
+
+        document.getElementById('browseFolderBtn').addEventListener('click', function() {
+            wv('browse_folder');
+        });
+
+        document.getElementById('backBtn').addEventListener('click', function() {
+            document.getElementById('settingsPage').classList.remove('active');
+            document.getElementById('mainContent').classList.remove('hidden');
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', function() {
+            var ramValue = isAdaptiveRam ? originalRamValue : parseInt(ramInput.value);
+            var w = parseInt(document.getElementById('widthInput').value) || 1920;
+            var h = parseInt(document.getElementById('heightInput').value) || 1080;
+            var cfg = {
+                ram: ramValue,
+                adaptiveRam: isAdaptiveRam,
+                width: w,
+                height: h,
+                gameFolder: (folderInput && folderInput.value) || 'C:\\SkyClient',
+                language: lang,
+                selectedVersion: selectedVersion
+            };
+            wv('save_config:' + JSON.stringify(cfg));
+            var btn = document.getElementById('saveBtn');
+            var orig = btn.textContent;
+            btn.textContent = lang === 'ru' ? '\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e!' : 'Saved!';
+            btn.disabled = true;
+            setTimeout(function() {
+                btn.textContent = orig;
+                btn.disabled = false;
+            }, 2000);
+        });
+
+        function generateRandomHash() {
+            var c = 'abcdef0123456789';
+            var r = '';
+            for (var i = 0; i < 15; i++) r += c.charAt(Math.floor(Math.random() * c.length));
+            return r;
+        }
+
+        function loadConfigurationValues(config) {
+            originalRamValue = config.ram || 4096;
+            ramInput.value = originalRamValue;
+            document.getElementById('widthInput').value = config.width || 1920;
+            document.getElementById('heightInput').value = config.height || 1080;
+            if (folderInput) folderInput.value = config.gameFolder || 'C:\\SkyClient';
+            isAdaptiveRam = !!config.adaptiveRam;
+            adaptiveCheckbox.classList.toggle('checked', isAdaptiveRam);
+            updateRamInputState();
+        }
+
+        document.addEventListener('mousedown', function(e) {
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' ||
+                e.target.closest('.ctrl') || e.target.closest('.social') ||
+                e.target.closest('.action-btn') || e.target.closest('.product-card') ||
+                e.target.closest('.checkbox-wrap') ||
+                e.target.closest('.save-btn') || e.target.closest('.back-btn') ||
+                e.target.closest('.logout-overlay')) {
+                return;
+            }
+            wv('start_drag');
+        });
+
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && ['I','C','J'].indexOf(e.key) !== -1) ||
+                (e.ctrlKey && e.key === 'u') ||
+                e.key === 'Tab') {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('message', function(event) {
+            if (typeof event.data !== 'string') return;
+
+            if (event.data.startsWith('dev_loader:')) {
+                isDevLoader = event.data === 'dev_loader:1';
+            }
+            else if (event.data === 'dev_access_required') {
+                launchIsPending = false;
+                unlockDevBranch(function(){});
+            }
+            else if (event.data.startsWith('config_loaded:')) {
+                var config = JSON.parse(event.data.substring(14));
+                loadConfigurationValues(config);
+                if (config.language && config.language !== lang) {
+                    updateLanguage(config.language);
+                }
+                if (config.selectedVersion) {
+                    selectedVersion = config.selectedVersion;
+                }
+            }
+            else if (event.data.startsWith('folder_selected:')) {
+                var folder = event.data.substring(16);
+                if (folderInput) folderInput.value = folder;
+                document.getElementById('saveBtn').click();
+            }
+            else if (event.data.startsWith('user_data:')) {
+                var ud = JSON.parse(event.data.substring(10));
+                currentNickname = ud.username || ud.nickname || 'algorithm';
+                currentSubscriptionEnd = ud.subs_till || null;
+                document.getElementById('userTitle').textContent = currentNickname;
+                var userUidEl = document.getElementById('userUid');
+                if (userUidEl && ud.uid) {
+                    var uidNum = String(ud.uid).replace(/[^0-9]/g, '');
+                    userUidEl.textContent = 'UID: ' + (uidNum || ud.uid);
+                }
+                localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                    login: ud.login || currentNickname,
+                    nickname: currentNickname,
+                    uid: ud.uid || null,
+                    hasSubscription: !!ud.subs_till,
+                    subs_till: currentSubscriptionEnd,
+                    freeze_count: ud.freeze_count || 0,
+                    frozen_at: ud.frozen_at || null,
+                    session_token: ud.session_token || ''
+                }));
+                checkVersionAccess();
+            }
+            else if (event.data.startsWith('launch_status:')) {
+                // Do nothing to keep the "Starting..." / "Запуск..." animation running
+            }
+            else if (event.data.startsWith('launch_progress:')) {
+                var parts = event.data.substring(16).split('|');
+                var pct = parseInt(parts.pop());
+                if (isNaN(pct)) return;
+                var bar = document.getElementById('modalProgressBar');
+                var pctEl = document.getElementById('modalPercent');
+                if (bar) bar.style.width = Math.min(100, pct) + '%';
+                if (pctEl) animateSlide(pctEl, pct + '%', true);
+            }
+            else if (event.data === 'game_launched') {
+                if (!launchIsPending) return;
+                launchIsPending = false;
+                stopLaunchAnimation();
+                var status2 = document.getElementById('modalStatus');
+                if (status2) status2.textContent = lang === 'ru' ? '\u041d\u0430\u0441\u043b\u0430\u0436\u0434\u0430\u0439\u0442\u0435\u0441\u044c!' : 'Enjoy!';
+                var bar = document.getElementById('modalProgressBar');
+                var pctEl = document.getElementById('modalPercent');
+                if (bar) bar.style.width = '100%';
+                if (pctEl) animateSlide(pctEl, '100%', true);
+                setTimeout(function() {
+                    wv('close_window_fade');
+                }, 900);
+            }
+            else if (event.data === 'launch_failed') {
+                if (!launchIsPending) return;
+                launchIsPending = false;
+                stopLaunchAnimation();
+                var status3 = document.getElementById('modalStatus');
+                if (status3) status3.textContent = lang === 'ru' ? '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u043f\u0443\u0441\u043a\u0430!' : 'Launch failed!';
+            }
+            else if (event.data === 'launch_cancelled') {
+                launchIsPending = false;
+                stopLaunchAnimation();
+                document.getElementById('launchModal').classList.remove('show');
+            }
+            else if (event.data === 'game_ended') {
+                // Process-exit notifications must not dismiss an in-progress launch.
+            }
+        });
+
+        window.addEventListener('load', function() {
+            var overlay = document.getElementById('loadingOverlay');
+            var stored = getStoredCurrentUser();
+            if (!stored || !stored.uid) {
+                window.location.href = 'index.html';
+                return;
+            }
+            var delay = Math.random() * 200 + 300;
+            setTimeout(function() {
+                overlay.classList.add('hidden');
+                document.getElementById('mainContent').classList.add('ready');
+                wv('profile_loaded');
+                wv('load_config');
+                checkVersionAccess();
+            }, delay);
+        });
+    </script>
+</body>
+</html>

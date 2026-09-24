@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="-1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <script>
+        // Force reload if cached - version 20250219_002
+        const CACHE_VERSION = '20250219_002';
+        const storedVersion = sessionStorage.getItem('pageVersion');
+        if (storedVersion !== CACHE_VERSION) {
+            sessionStorage.setItem('pageVersion', CACHE_VERSION);
+            if (storedVersion !== null) {
+                location.reload(true);
+            }
+        }
+    </script>
