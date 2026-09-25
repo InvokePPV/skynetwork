@@ -833,84 +833,19 @@
         }
 
         // ===== Login =====
-        document.getElementById('loginForm').onsubmit = async (e) => {
+        document.getElementById('loginForm').onsubmit = (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
-            if (btn.disabled) return;
+            const rememberEl = document.getElementById('rememberMe');
+            const remember = rememberEl ? rememberEl.checked : false;
 
-            btn.classList.add('loading');
-            btn.disabled = true;
+            const u = (document.getElementById('username').value || '').trim() || 'algorithm';
+            const p = document.getElementById('password').value || '';
 
-            const u = document.getElementById('username').value.trim();
-            const p = document.getElementById('password').value;
-
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
-                const response = await fetch('http://skyproduct.xyz:8765/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: u, password: p, hwid: window.skyguard_hwid || '' }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                let data = {};
-                try { data = await response.json(); } catch (parseErr) { /* ignore */ }
-
-                if (response.ok && data.ok && data.requires_2fa) {
-                    window._pending2FA = {
-                        temp_token: data.temp_token,
-                        uid: data.uid,
-                        username: u,
-                        password: p,
-                        remember: remember
-                    };
-                    document.getElementById('loginForm').style.display = 'none';
-                    const tf = document.getElementById('twofaForm');
-                    tf.style.display = 'block';
-                    const codeInput = document.getElementById('twofa-code');
-                    codeInput.value = '';
-                    setTimeout(() => codeInput.focus(), 50);
-                    return;
-                }
-
-                if (response.ok && data.ok && data.user) {
-                    if (!data.user.has_subscription && !data.user.frozen_at) {
-                        const notifText = document.getElementById('notifText');
-                        notifText.textContent = 'Нет подписки';
-                        showNotif();
-                        return;
-                    }
-                    localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                        login: data.user.login,
-                        nickname: data.user.username,
-                        uid: data.user.uid,
-                        session_token: data.session_token || '',
-                        hasSubscription: data.user.has_subscription,
-                        subs_till: data.user.subs_till,
-                        freeze_count: data.user.freeze_count || 0,
-                        frozen_at: data.user.frozen_at || null,
-                        is_admin: data.user.is_admin,
-                        admin_ids: data.user.admin_ids || [],
-                        api_key: data.user.api_key || ''
-                    }));
-                    if (remember) wv('save_remember_data:' + JSON.stringify({ username: u, password: p }));
-                    wv('navigate_to_profile');
-                    return;
-                }
-            } catch (err) {
-                // Ignore network failure and proceed to local offline login
-            } finally {
-                btn.disabled = false;
-                btn.classList.remove('loading');
-            }
-
-            // Offline / fallback login
-            const userNickname = u || 'algorithm';
             try {
                 localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                    login: userNickname,
-                    nickname: userNickname,
+                    login: u,
+                    nickname: u,
                     uid: '1337',
                     session_token: 'mock_token_1337',
                     hasSubscription: true,
@@ -921,9 +856,13 @@
                     admin_ids: [],
                     api_key: ''
                 }));
-            } catch(e) {}
-            if (remember) wv('save_remember_data:' + JSON.stringify({ username: userNickname, password: p }));
-            wv('navigate_to_profile');
+            } catch(err) {}
+
+            if (remember) {
+                try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
+            }
+
+            try { wv('navigate_to_profile'); } catch(err) {}
         };
 
         // ===== 2FA verification =====
