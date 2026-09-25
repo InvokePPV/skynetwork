@@ -833,6 +833,11 @@
         }
 
         // ===== Login =====
+        const LOCAL_USERS = [
+            { uid: 1, username: 'admin', password: '123', status: 'active', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' },
+            { uid: 2, username: 'algorithm', password: '123', status: 'active', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' }
+        ];
+
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -850,55 +855,66 @@
             btn.classList.add('loading');
             btn.disabled = true;
 
+            let userList = LOCAL_USERS;
+
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
                 const url = 'https://raw.githubusercontent.com/InvokePPV/skynetwork/main/users.json?v=' + Date.now();
-                const resp = await fetch(url);
-                if (!resp.ok) throw new Error('Network error');
-                const data = await resp.json();
-
-                const foundUser = (data.users || []).find(user => 
-                    (user.username.toLowerCase() === u.toLowerCase() || String(user.uid) === u) &&
-                    (!user.password || user.password === p)
-                );
-
-                if (!foundUser) {
-                    document.getElementById('notifText').textContent = lang === 'ru' ? 'Неверные данные' : 'Invalid credentials';
-                    showNotif();
-                    return;
+                const resp = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && Array.isArray(data.users) && data.users.length > 0) {
+                        userList = data.users;
+                    }
                 }
-
-                if (foundUser.status && foundUser.status !== 'active') {
-                    document.getElementById('notifText').textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account suspended';
-                    showNotif();
-                    return;
-                }
-
-                localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                    login: foundUser.username,
-                    nickname: foundUser.username,
-                    uid: String(foundUser.uid || '1'),
-                    session_token: 'git_session_' + foundUser.uid,
-                    hasSubscription: foundUser.hasSubscription !== false,
-                    subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
-                    freeze_count: 0,
-                    frozen_at: null,
-                    is_admin: true,
-                    admin_ids: [],
-                    api_key: ''
-                }));
-
-                if (remember) {
-                    try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
-                }
-
-                try { wv('navigate_to_profile'); } catch(err) {}
             } catch (err) {
-                document.getElementById('notifText').textContent = lang === 'ru' ? 'Ошибка проверки на GitHub' : 'GitHub verification failed';
+                // Network / CORS / DPI block fallback to LOCAL_USERS
+            }
+
+            const foundUser = userList.find(user => 
+                (user.username.toLowerCase() === u.toLowerCase() || String(user.uid) === u) &&
+                (!user.password || user.password === p)
+            );
+
+            if (!foundUser) {
+                document.getElementById('notifText').textContent = lang === 'ru' ? 'Неверные данные' : 'Invalid credentials';
                 showNotif();
-            } finally {
                 btn.disabled = false;
                 btn.classList.remove('loading');
+                return;
             }
+
+            if (foundUser.status && foundUser.status !== 'active') {
+                document.getElementById('notifText').textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account suspended';
+                showNotif();
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                return;
+            }
+
+            localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                login: foundUser.username,
+                nickname: foundUser.username,
+                uid: String(foundUser.uid || '1'),
+                session_token: 'git_session_' + foundUser.uid,
+                hasSubscription: foundUser.hasSubscription !== false,
+                subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
+                freeze_count: 0,
+                frozen_at: null,
+                is_admin: true,
+                admin_ids: [],
+                api_key: ''
+            }));
+
+            if (remember) {
+                try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
+            }
+
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            try { wv('navigate_to_profile'); } catch(err) {}
         };
 
         // ===== 2FA verification =====
