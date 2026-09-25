@@ -1,5 +1,22 @@
 {
   "users": [
-    { "uid": 1, "username": "admin", "status": "active", "tier": "premium" }
+    {
+      "uid": 1,
+      "username": "admin",
+      "password": "123",
+      "status": "active",
+      "tier": "premium",
+      "hasSubscription": true,
+      "subs_till": "2099-12-31T23:59:59Z"
+    },
+    {
+      "uid": 2,
+      "username": "algorithm",
+      "password": "123",
+      "status": "active",
+      "tier": "premium",
+      "hasSubscription": true,
+      "subs_till": "2099-12-31T23:59:59Z"
+    }
   ]
 }
