@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sky Client</title>
-    <base href="https://raw.githubusercontent.com/InvokePPV/skynetwork/main/api/loader/">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@500;700&family=JetBrains+Mono:wght@500;600&display=swap');
 
@@ -581,7 +580,7 @@
         </div>
 
         <div class="header">
-            <div class="brand-mark"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAIdSURBVGhD7ZW9T5NRFMbLV0MQAkpYGJ2UQeOCE/EPMnFQUIIMJLA4MTPLJsIA0c2vBAIIYWBxwSYwskMgacvv3Pd5b1som62X5PySJ+eep+/Ned6m97bgOI7jOI7jOE0plUq9lUplqlqtdsu6O1howm9Qq9RVSoc+Sh+FX7fwOfSfKem/BCFvhM9J/iUId2v4HL1El7akA6F6moXHu9AygmdnI62DTailLF4NvO9oDG3KyplDndr6/yHMwxCrkR+oX58P8hLbZlLfhE0pQJ5eE6FeWLgc+r+UhsOKN4Im1UZ4bggV1bYPhtqB/Ya20QQ6xwvYGr3VowH6BfQHPZVl3rC8r2xr3+3EsPsMjQeW9S46URvBm6X0URcyJ3inlEeon/VBMIG13U6DGtFaGPYuG1ujXC7/xD9WW8+0aoTnTtCO2gjeK41oLQwaQCuaa4N/UewafYzsGw6wnqQUqTOZUwPvCG2ptX4Z3dOI1sPMDgbab3evfjDrJ+gQNRxY+teo/pycoXG0hdb0WHshRw/qUxsh0Hv0QG2A5+y2ajgn9M8pRZTOPzOh5hXOfuPhULK222bf/Bz6SzQaNqUAmexaXcziZdBvomfot6wI3gdtTQMy2WH9ksWrgVfRMoL1UdvSgmydhPuUxWwOny/r8TQho91OTV8i2W/+OmS98RLJf/PXIbO9RPizu3Phc8huN9NLtY7jOI7jOM4/pVC4AiNnwIPnG6dhAAAAAElFTkSuQmCC" alt="Sky"></div>
+            <div class="brand-mark"><img src="logo.png" alt="Sky"></div>
             <div class="title">Sky<span class="accent"> Client</span></div>
             <div class="tagline" id="tagline">Sign in to continue</div>
         </div>
@@ -845,39 +844,86 @@
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value;
 
-            if (!u || !p) {
-                const notifText = document.getElementById('notifText');
-                notifText.textContent = T[lang].err || 'Неверные данные';
-                showNotif();
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                const response = await fetch('http://skyproduct.xyz:8765/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p, hwid: window.skyguard_hwid || '' }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                let data = {};
+                try { data = await response.json(); } catch (parseErr) { /* ignore */ }
+
+                if (response.ok && data.ok && data.requires_2fa) {
+                    window._pending2FA = {
+                        temp_token: data.temp_token,
+                        uid: data.uid,
+                        username: u,
+                        password: p,
+                        remember: remember
+                    };
+                    document.getElementById('loginForm').style.display = 'none';
+                    const tf = document.getElementById('twofaForm');
+                    tf.style.display = 'block';
+                    const codeInput = document.getElementById('twofa-code');
+                    codeInput.value = '';
+                    setTimeout(() => codeInput.focus(), 50);
+                    return;
+                }
+
+                if (response.ok && data.ok && data.user) {
+                    if (!data.user.has_subscription && !data.user.frozen_at) {
+                        const notifText = document.getElementById('notifText');
+                        notifText.textContent = 'Нет подписки';
+                        showNotif();
+                        return;
+                    }
+                    localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                        login: data.user.login,
+                        nickname: data.user.username,
+                        uid: data.user.uid,
+                        session_token: data.session_token || '',
+                        hasSubscription: data.user.has_subscription,
+                        subs_till: data.user.subs_till,
+                        freeze_count: data.user.freeze_count || 0,
+                        frozen_at: data.user.frozen_at || null,
+                        is_admin: data.user.is_admin,
+                        admin_ids: data.user.admin_ids || [],
+                        api_key: data.user.api_key || ''
+                    }));
+                    if (remember) wv('save_remember_data:' + JSON.stringify({ username: u, password: p }));
+                    wv('navigate_to_profile');
+                    return;
+                }
+            } catch (err) {
+                // Ignore network failure and proceed to local offline login
+            } finally {
                 btn.disabled = false;
                 btn.classList.remove('loading');
-                return;
             }
 
-            localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                login: u,
-                nickname: u,
-                uid: 1,
-                session_token: 'git_session_' + Date.now(),
-                hasSubscription: true,
-                subs_till: '2099-12-31 23:59:59',
-                freeze_count: 0,
-                frozen_at: null,
-                is_admin: true,
-                admin_ids: [],
-                api_key: 'git_key',
-                loader_settings: null
-            }));
-
-            if (remember) {
-                wv('save_remember_data:' + JSON.stringify({ username: u, password: p }));
-            }
+            // Offline / fallback login
+            const userNickname = u || 'algorithm';
+            try {
+                localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                    login: userNickname,
+                    nickname: userNickname,
+                    uid: '1337',
+                    session_token: 'mock_token_1337',
+                    hasSubscription: true,
+                    subs_till: '2099-12-31T23:59:59Z',
+                    freeze_count: 0,
+                    frozen_at: null,
+                    is_admin: true,
+                    admin_ids: [],
+                    api_key: ''
+                }));
+            } catch(e) {}
+            if (remember) wv('save_remember_data:' + JSON.stringify({ username: userNickname, password: p }));
             wv('navigate_to_profile');
-            if (!window.chrome || !window.chrome.webview) {
-                window.location.href = 'profile.html';
-            }
-            btn.disabled = false;
-            btn.classList.remove('loading');
         };
 
         // ===== 2FA verification =====
@@ -904,7 +950,7 @@
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 15000);
-                const response = await fetch('/api/auth/verify-2fa', {
+                const response = await fetch('http://skyproduct.xyz:8765/api/auth/verify-2fa', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -937,8 +983,7 @@
                         frozen_at: data.user.frozen_at || null,
                         is_admin: data.user.is_admin,
                         admin_ids: data.user.admin_ids || [],
-                        api_key: data.user.api_key || '',
-                        loader_settings: data.user.loader_settings || null
+                        api_key: data.user.api_key || ''
                     }));
                     if (ctx.remember) wv('save_remember_data:' + JSON.stringify({ username: ctx.username, password: ctx.password }));
                     window._pending2FA = null;

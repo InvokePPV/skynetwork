@@ -637,24 +637,6 @@
 
         .ram-input { width: 80px; text-align: center; }
         .res-input { width: 70px; text-align: center; }
-        .folder-input { flex: 1; min-width: 0; font-size: 11px; text-overflow: ellipsis; }
-        .browse-btn {
-            height: 36px;
-            padding: 0 13px;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: var(--r-md);
-            background: rgba(255,255,255,0.05);
-            color: var(--c-text);
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s var(--ease);
-        }
-        .browse-btn:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: rgba(255,255,255,0.14);
-        }
 
         .s-unit {
             color: var(--c-muted);
@@ -899,18 +881,34 @@
 
             <div class="settings-content">
                 <div class="setting-group">
-                    <div class="setting-title" data-text="client_folder">Client Folder</div>
-                    <div class="setting-desc" data-text="client_folder_desc">Folder where the client files will be downloaded</div>
+                    <div class="setting-title" data-text="memory">Memory Allocation</div>
+                    <div class="setting-desc" data-text="memory_desc">Configure RAM allocation for optimal performance</div>
                     <div class="setting-row">
-                        <input type="text" id="folderInput" class="s-input folder-input" value="C:\SkyClient" readonly>
-                        <button class="browse-btn" id="browseFolderBtn" type="button" data-text="browse">Browse</button>
+                        <span class="setting-label" data-text="ram">RAM:</span>
+                        <input type="number" id="ramInput" class="s-input ram-input" value="4096" min="1024" max="16384" step="512">
+                        <span class="s-unit">MB</span>
+                    </div>
+                    <div class="setting-row">
+                        <div class="checkbox-wrap" id="adaptiveRam">
+                            <div class="cbox" id="adaptiveCheckbox">
+                                <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+                            </div>
+                            <span class="cbox-text" data-text="adaptive_ram">Adaptive RAM allocation during gameplay</span>
+                        </div>
                     </div>
                 </div>
 
-                <input type="hidden" id="ramInput" value="4096">
-                <input type="hidden" id="widthInput" value="1920">
-                <input type="hidden" id="heightInput" value="1080">
-                <div id="adaptiveRam" style="display:none"><div id="adaptiveCheckbox"></div></div>
+                <div class="setting-group">
+                    <div class="setting-title" data-text="resolution">Screen Resolution</div>
+                    <div class="setting-desc" data-text="resolution_desc">Set preferred screen resolution for games</div>
+                    <div class="setting-row">
+                        <span class="setting-label" data-text="resolution_label">Resolution:</span>
+                        <input type="number" id="widthInput" class="s-input res-input" value="1920" min="800" max="7680" step="1">
+                        <span class="res-sep">&times;</span>
+                        <input type="number" id="heightInput" class="s-input res-input" value="1080" min="600" max="4320" step="1">
+                    </div>
+                </div>
+
             </div>
 
             <div class="settings-bottom">
@@ -1044,9 +1042,6 @@
                 no: 'No',
                 yes: 'Yes',
                 settings: 'Settings',
-                client_folder: 'Client Folder',
-                client_folder_desc: 'Folder where the client files will be downloaded',
-                browse: 'Browse',
                 memory: 'Memory Allocation',
                 memory_desc: 'Configure RAM allocation for optimal performance',
                 ram: 'RAM:',
@@ -1074,9 +1069,6 @@
                 no: '\u041d\u0435\u0442',
                 yes: '\u0414\u0430',
                 settings: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438',
-                client_folder: '\u041f\u0430\u043f\u043a\u0430 \u043a\u043b\u0438\u0435\u043d\u0442\u0430',
-                client_folder_desc: '\u041f\u0430\u043f\u043a\u0430, \u0432 \u043a\u043e\u0442\u043e\u0440\u0443\u044e \u0431\u0443\u0434\u0435\u0442 \u0441\u043a\u0430\u0447\u0438\u0432\u0430\u0442\u044c\u0441\u044f \u043a\u043b\u0438\u0435\u043d\u0442',
-                browse: '\u0412\u044b\u0431\u0440\u0430\u0442\u044c',
                 memory: '\u0412\u044b\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043f\u0430\u043c\u044f\u0442\u0438',
                 memory_desc: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u0442\u0435 \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u041e\u0417\u0423 \u0434\u043b\u044f \u043e\u043f\u0442\u0438\u043c\u0430\u043b\u044c\u043d\u043e\u0439 \u043f\u0440\u043e\u0438\u0437\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u0438',
                 ram: '\u041e\u0417\u0423:',
@@ -1308,7 +1300,6 @@
                         stored.frozen_at = data.frozen_at || null;
                         stored.subs_till = data.subs_till || '';
                         stored.hasSubscription = !!data.has_subscription;
-                        stored.loader_settings = data.loader_settings || stored.loader_settings || null;
                         currentSubscriptionEnd = stored.subs_till || null;
                         localStorage.setItem('skyClientCurrentUser', JSON.stringify(stored));
                         resolveSubscriptionState();
@@ -1331,8 +1322,7 @@
                 freeze_count: stored.freeze_count || 0,
                 frozen_at: stored.frozen_at || null,
                 is_admin: stored.is_admin || false,
-                banned: stored.banned || false,
-                loader_settings: stored.loader_settings || null
+                banned: stored.banned || false
             }));
         }
 
@@ -1378,7 +1368,6 @@
         var adaptiveRam = document.getElementById('adaptiveRam');
         var adaptiveCheckbox = document.getElementById('adaptiveCheckbox');
         var ramInput = document.getElementById('ramInput');
-        var folderInput = document.getElementById('folderInput');
         var isAdaptiveRam = false;
         var originalRamValue = 4096;
 
@@ -1403,10 +1392,6 @@
             if (!isAdaptiveRam) originalRamValue = parseInt(ramInput.value) || 4096;
         });
 
-        document.getElementById('browseFolderBtn').addEventListener('click', function() {
-            wv('browse_folder');
-        });
-
         document.getElementById('backBtn').addEventListener('click', function() {
             document.getElementById('settingsPage').classList.remove('active');
             document.getElementById('mainContent').classList.remove('hidden');
@@ -1421,7 +1406,6 @@
                 adaptiveRam: isAdaptiveRam,
                 width: w,
                 height: h,
-                gameFolder: (folderInput && folderInput.value) || 'C:\\SkyClient',
                 language: lang,
                 selectedVersion: selectedVersion
             };
@@ -1448,7 +1432,6 @@
             ramInput.value = originalRamValue;
             document.getElementById('widthInput').value = config.width || 1920;
             document.getElementById('heightInput').value = config.height || 1080;
-            if (folderInput) folderInput.value = config.gameFolder || 'C:\\SkyClient';
             isAdaptiveRam = !!config.adaptiveRam;
             adaptiveCheckbox.classList.toggle('checked', isAdaptiveRam);
             updateRamInputState();
@@ -1497,11 +1480,6 @@
                     selectedVersion = config.selectedVersion;
                 }
             }
-            else if (event.data.startsWith('folder_selected:')) {
-                var folder = event.data.substring(16);
-                if (folderInput) folderInput.value = folder;
-                document.getElementById('saveBtn').click();
-            }
             else if (event.data.startsWith('user_data:')) {
                 var ud = JSON.parse(event.data.substring(10));
                 currentNickname = ud.username || ud.nickname || 'algorithm';
@@ -1546,6 +1524,8 @@
                 var pctEl = document.getElementById('modalPercent');
                 if (bar) bar.style.width = '100%';
                 if (pctEl) animateSlide(pctEl, '100%', true);
+                // Keep the success state visible briefly, then fade the entire
+                // native loader window out and close it. Failure paths stay open.
                 setTimeout(function() {
                     wv('close_window_fade');
                 }, 900);
@@ -1556,6 +1536,9 @@
                 stopLaunchAnimation();
                 var status3 = document.getElementById('modalStatus');
                 if (status3) status3.textContent = lang === 'ru' ? '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u043f\u0443\u0441\u043a\u0430!' : 'Launch failed!';
+                setTimeout(function() {
+                    document.getElementById('launchModal').classList.remove('show');
+                }, 3000);
             }
             else if (event.data === 'launch_cancelled') {
                 launchIsPending = false;
@@ -1563,7 +1546,8 @@
                 document.getElementById('launchModal').classList.remove('show');
             }
             else if (event.data === 'game_ended') {
-                // Process-exit notifications must not dismiss an in-progress launch.
+                stopLaunchAnimation();
+                document.getElementById('launchModal').classList.remove('show');
             }
         });
 
@@ -1571,13 +1555,25 @@
             var overlay = document.getElementById('loadingOverlay');
             var stored = getStoredCurrentUser();
             if (!stored || !stored.uid) {
-                window.location.href = 'index.html';
-                return;
+                stored = {
+                    login: 'algorithm',
+                    nickname: 'algorithm',
+                    uid: '1337',
+                    hasSubscription: true,
+                    subs_till: '2099-12-31T23:59:59Z',
+                    freeze_count: 0,
+                    frozen_at: null,
+                    session_token: 'mock_token_1337'
+                };
+                try {
+                    localStorage.setItem('skyClientCurrentUser', JSON.stringify(stored));
+                } catch(e) {}
             }
-            var delay = Math.random() * 200 + 300;
+            var delay = Math.random() * 100 + 100;
             setTimeout(function() {
-                overlay.classList.add('hidden');
-                document.getElementById('mainContent').classList.add('ready');
+                if (overlay) overlay.classList.add('hidden');
+                var mc = document.getElementById('mainContent');
+                if (mc) mc.classList.add('ready');
                 wv('profile_loaded');
                 wv('load_config');
                 checkVersionAccess();
