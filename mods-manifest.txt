@@ -1,2 +1,2 @@
-003e79bb2669cd0d05c8818f47a08c29  fabric-api-0.119.4+1.21.4.jar
-68f9a73c931c93284a1db42e86878c40  suckfinal.jar
+b94492f1a691ebdf13b5a1d396414679  fabric-api-0.119.4+1.21.4.jar
+644c1aab278b70508b3ba8c32dbf0460  suckfinal.jar
