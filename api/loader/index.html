@@ -833,15 +833,8 @@
         }
 
         // ===== Login =====
-        const EMBEDDED_USERS = [
-            { uid: 1, username: 'admin', password: '123', status: 'active', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' },
-            { uid: 2, username: 'algorithm', password: '123', status: 'active', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' }
-        ];
-
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            if (btn.disabled) return;
 
             const u = (document.getElementById('username').value || '').trim();
             const p = document.getElementById('password').value || '';
@@ -853,48 +846,58 @@
                 return;
             }
 
+            const btn = document.getElementById('submitBtn');
             btn.classList.add('loading');
             btn.disabled = true;
 
-            let users = EMBEDDED_USERS;
+            let usersList = null;
 
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3500);
-                const url = 'https://raw.githubusercontent.com/InvokePPV/skynetwork/main/users.json?v=' + Date.now();
-                const resp = await fetch(url, { signal: controller.signal });
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+                const response = await fetch('https://raw.githubusercontent.com/InvokePPV/skynetwork/main/users.json?t=' + Date.now(), {
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
                 clearTimeout(timeoutId);
 
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (data && Array.isArray(data.users) && data.users.length > 0) {
-                        users = data.users;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && Array.isArray(data.users)) {
+                        usersList = data.users;
                     }
                 }
             } catch (err) {
-                // If GitHub raw is blocked by DPI/CORS/ISP, fallback to EMBEDDED_USERS seamlessly
+                console.warn('GitHub users fetch failed/timed out, trying local fallback:', err);
             }
 
-            const foundUser = users.find(user => 
+            if (!usersList) {
+                usersList = [
+                    { uid: 1, username: 'admin', password: '123', status: 'active', tier: 'premium', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' },
+                    { uid: 2, username: 'algorithm', password: '123', status: 'active', tier: 'premium', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' }
+                ];
+            }
+
+            const foundUser = usersList.find(user => 
                 (String(user.username).toLowerCase() === u.toLowerCase() || String(user.uid) === u) &&
                 (String(user.password) === p)
             );
+
+            btn.classList.remove('loading');
+            btn.disabled = false;
 
             if (!foundUser) {
                 const notifText = document.getElementById('notifText');
                 notifText.textContent = lang === 'ru' ? 'Неверный логин или пароль' : 'Invalid username or password';
                 showNotif();
-                btn.disabled = false;
-                btn.classList.remove('loading');
                 return;
             }
 
-            if (foundUser.status && foundUser.status !== 'active') {
+            if (foundUser.status === 'blocked') {
                 const notifText = document.getElementById('notifText');
-                notifText.textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account suspended';
+                notifText.textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account is blocked';
                 showNotif();
-                btn.disabled = false;
-                btn.classList.remove('loading');
                 return;
             }
 
@@ -905,9 +908,10 @@
                 session_token: 'git_session_' + foundUser.uid,
                 hasSubscription: foundUser.hasSubscription !== false,
                 subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
+                tier: foundUser.tier || 'premium',
                 freeze_count: 0,
                 frozen_at: null,
-                is_admin: true,
+                is_admin: foundUser.tier === 'premium' || foundUser.username === 'admin',
                 admin_ids: [],
                 api_key: ''
             }));
@@ -916,8 +920,6 @@
                 try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
             }
 
-            btn.disabled = false;
-            btn.classList.remove('loading');
             try { wv('navigate_to_profile'); } catch(err) {}
         };
 
