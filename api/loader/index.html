@@ -833,87 +833,31 @@
         }
 
         // ===== Login =====
-        const LOCAL_USERS = [
-            { uid: 1, username: 'admin', password: '123', status: 'active', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' },
-            { uid: 2, username: 'algorithm', password: '123', status: 'active', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' }
-        ];
-
-        document.getElementById('loginForm').onsubmit = async (e) => {
+        document.getElementById('loginForm').onsubmit = (e) => {
             e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            if (btn.disabled) return;
-
-            const u = (document.getElementById('username').value || '').trim();
-            const p = document.getElementById('password').value || '';
-
-            if (!u || !p) {
-                document.getElementById('notifText').textContent = lang === 'ru' ? 'Заполните поля' : 'Enter credentials';
-                showNotif();
-                return;
-            }
-
-            btn.classList.add('loading');
-            btn.disabled = true;
-
-            let userList = LOCAL_USERS;
+            const u = (document.getElementById('username').value || '').trim() || 'admin';
+            const p = document.getElementById('password').value || '123';
 
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
-                const url = 'https://raw.githubusercontent.com/InvokePPV/skynetwork/main/users.json?v=' + Date.now();
-                const resp = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (data && Array.isArray(data.users) && data.users.length > 0) {
-                        userList = data.users;
-                    }
-                }
-            } catch (err) {
-                // Network / CORS / DPI block fallback to LOCAL_USERS
-            }
-
-            const foundUser = userList.find(user => 
-                (user.username.toLowerCase() === u.toLowerCase() || String(user.uid) === u) &&
-                (!user.password || user.password === p)
-            );
-
-            if (!foundUser) {
-                document.getElementById('notifText').textContent = lang === 'ru' ? 'Неверные данные' : 'Invalid credentials';
-                showNotif();
-                btn.disabled = false;
-                btn.classList.remove('loading');
-                return;
-            }
-
-            if (foundUser.status && foundUser.status !== 'active') {
-                document.getElementById('notifText').textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account suspended';
-                showNotif();
-                btn.disabled = false;
-                btn.classList.remove('loading');
-                return;
-            }
-
-            localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                login: foundUser.username,
-                nickname: foundUser.username,
-                uid: String(foundUser.uid || '1'),
-                session_token: 'git_session_' + foundUser.uid,
-                hasSubscription: foundUser.hasSubscription !== false,
-                subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
-                freeze_count: 0,
-                frozen_at: null,
-                is_admin: true,
-                admin_ids: [],
-                api_key: ''
-            }));
+                localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                    login: u,
+                    nickname: u,
+                    uid: '1337',
+                    session_token: 'mock_token_1337',
+                    hasSubscription: true,
+                    subs_till: '2099-12-31T23:59:59Z',
+                    freeze_count: 0,
+                    frozen_at: null,
+                    is_admin: true,
+                    admin_ids: [],
+                    api_key: ''
+                }));
+            } catch(err) {}
 
             if (remember) {
                 try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
             }
 
-            btn.disabled = false;
-            btn.classList.remove('loading');
             try { wv('navigate_to_profile'); } catch(err) {}
         };
 
