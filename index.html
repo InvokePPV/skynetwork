@@ -260,8 +260,8 @@
             background: rgba(255,255,255,0.025);
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: var(--r-md);
-            color: transparent;
-            caret-color: #fff;
+            color: #ffffff;
+            caret-color: #ffffff;
             font-size: 13px;
             font-family: inherit;
             font-weight: 500;
@@ -273,7 +273,7 @@
             z-index: 2;
         }
 
-        .field-input::placeholder { color: rgba(255,255,255,0.25); }
+        .field-input::placeholder { color: rgba(255,255,255,0.4); opacity: 1; }
 
         .field-input:hover {
             background: rgba(255,255,255,0.035);
@@ -1032,68 +1032,6 @@
             }
         });
 
-        document.querySelectorAll('.field-input').forEach(inp => {
-            const display = document.createElement('div');
-            display.className = 'field-display';
-            inp.parentNode.appendChild(display);
-
-            let prevVal = inp.value;
-
-            function refresh() {
-                const curVal = inp.value;
-                const isPw = inp.type === 'password';
-                const dot = ch => isPw ? '•' : ch;
-
-                let diff = 0;
-                while (diff < prevVal.length && diff < curVal.length && prevVal[diff] === curVal[diff]) diff++;
-
-                display.innerHTML = '';
-                for (let i = 0; i < diff && i < curVal.length; i++) {
-                    const s = document.createElement('span');
-                    s.className = 'char';
-                    s.textContent = dot(curVal[i]);
-                    s.style.opacity = '1';
-                    display.appendChild(s);
-                }
-                for (let i = diff; i < curVal.length; i++) {
-                    const s = document.createElement('span');
-                    s.className = 'char char-in';
-                    s.textContent = dot(curVal[i]);
-                    s.style.animationDelay = ((i - diff) * 25) + 'ms';
-                    display.appendChild(s);
-                }
-                if (curVal.length < prevVal.length && diff < prevVal.length) {
-                    const s = document.createElement('span');
-                    s.className = 'char char-out';
-                    s.textContent = dot(prevVal[diff]);
-                    s.addEventListener('animationend', () => s.remove());
-                    display.appendChild(s);
-                }
-                prevVal = curVal;
-            }
-
-            inp.addEventListener('input', refresh);
-            refresh();
-
-            const _togglePw = togglePw;
-            togglePw = function() {
-                _togglePw();
-                const pw = document.getElementById('password');
-                const d = pw.parentNode.querySelector('.field-display');
-                if (d) {
-                    const isPw = pw.type === 'password';
-                    const dot = ch => isPw ? '•' : ch;
-                    d.innerHTML = '';
-                    for (let i = 0; i < pw.value.length; i++) {
-                        const s = document.createElement('span');
-                        s.className = 'char char-in';
-                        s.textContent = dot(pw.value[i]);
-                        s.style.animationDelay = (i * 20) + 'ms';
-                        d.appendChild(s);
-                    }
-                }
-            };
-        });
     </script>
 </body>
 </html>
