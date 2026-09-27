@@ -833,6 +833,11 @@
         }
 
         // ===== Login =====
+        const EMBEDDED_USERS = [
+            { uid: 1, username: 'admin', password: '123', status: 'active', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' },
+            { uid: 2, username: 'algorithm', password: '123', status: 'active', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' }
+        ];
+
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -851,71 +856,69 @@
             btn.classList.add('loading');
             btn.disabled = true;
 
+            let users = EMBEDDED_USERS;
+
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
-                const url = 'https://raw.githubusercontent.com/InvokePPV/skynetwork/main/users.json?nocache=' + Date.now();
+                const timeoutId = setTimeout(() => controller.abort(), 3500);
+                const url = 'https://raw.githubusercontent.com/InvokePPV/skynetwork/main/users.json?v=' + Date.now();
                 const resp = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeoutId);
 
-                if (!resp.ok) {
-                    throw new Error('HTTP ' + resp.status);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && Array.isArray(data.users) && data.users.length > 0) {
+                        users = data.users;
+                    }
                 }
-
-                const data = await resp.json();
-                const users = (data && Array.isArray(data.users)) ? data.users : [];
-
-                const foundUser = users.find(user => 
-                    (String(user.username).toLowerCase() === u.toLowerCase() || String(user.uid) === u) &&
-                    (String(user.password) === p)
-                );
-
-                if (!foundUser) {
-                    const notifText = document.getElementById('notifText');
-                    notifText.textContent = lang === 'ru' ? 'Неверный логин или пароль' : 'Invalid username or password';
-                    showNotif();
-                    btn.disabled = false;
-                    btn.classList.remove('loading');
-                    return;
-                }
-
-                if (foundUser.status && foundUser.status !== 'active') {
-                    const notifText = document.getElementById('notifText');
-                    notifText.textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account suspended';
-                    showNotif();
-                    btn.disabled = false;
-                    btn.classList.remove('loading');
-                    return;
-                }
-
-                localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                    login: foundUser.username,
-                    nickname: foundUser.username,
-                    uid: String(foundUser.uid || '1'),
-                    session_token: 'git_session_' + foundUser.uid,
-                    hasSubscription: foundUser.hasSubscription !== false,
-                    subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
-                    freeze_count: 0,
-                    frozen_at: null,
-                    is_admin: true,
-                    admin_ids: [],
-                    api_key: ''
-                }));
-
-                if (remember) {
-                    try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
-                }
-
-                btn.disabled = false;
-                btn.classList.remove('loading');
-                try { wv('navigate_to_profile'); } catch(err) {}
             } catch (err) {
+                // If GitHub raw is blocked by DPI/CORS/ISP, fallback to EMBEDDED_USERS seamlessly
+            }
+
+            const foundUser = users.find(user => 
+                (String(user.username).toLowerCase() === u.toLowerCase() || String(user.uid) === u) &&
+                (String(user.password) === p)
+            );
+
+            if (!foundUser) {
                 const notifText = document.getElementById('notifText');
-                notifText.textContent = lang === 'ru' ? 'Ошибка связи с GitHub' : 'GitHub connection error';
+                notifText.textContent = lang === 'ru' ? 'Неверный логин или пароль' : 'Invalid username or password';
                 showNotif();
                 btn.disabled = false;
                 btn.classList.remove('loading');
+                return;
             }
+
+            if (foundUser.status && foundUser.status !== 'active') {
+                const notifText = document.getElementById('notifText');
+                notifText.textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account suspended';
+                showNotif();
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                return;
+            }
+
+            localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                login: foundUser.username,
+                nickname: foundUser.username,
+                uid: String(foundUser.uid || '1'),
+                session_token: 'git_session_' + foundUser.uid,
+                hasSubscription: foundUser.hasSubscription !== false,
+                subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
+                freeze_count: 0,
+                frozen_at: null,
+                is_admin: true,
+                admin_ids: [],
+                api_key: ''
+            }));
+
+            if (remember) {
+                try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
+            }
+
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            try { wv('navigate_to_profile'); } catch(err) {}
         };
 
         // ===== 2FA verification =====
