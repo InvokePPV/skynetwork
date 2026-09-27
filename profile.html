@@ -1171,7 +1171,7 @@
                       onUnlocked();
                   }).catch(function(e) {
                       if (/session/i.test(e.message || '')) {
-                          localStorage.removeItem('skyClientCurrentUser');
+                          try { localStorage.removeItem('skyClientCurrentUser'); } catch(ex) {}
                           wv('clear_remember_data');
                           wv('logout');
                           return;
@@ -1275,7 +1275,7 @@
                 }).then(function(result){
                     if (!result.ok) {
                         if (/session/i.test((result.data && result.data.detail) || '')) {
-                            localStorage.removeItem('skyClientCurrentUser');
+                            try { localStorage.removeItem('skyClientCurrentUser'); } catch(ex) {}
                             wv('clear_remember_data');
                             wv('logout');
                         }
@@ -1288,7 +1288,7 @@
                         stored.subs_till = data.subs_till || '';
                         stored.hasSubscription = !!data.has_subscription;
                         currentSubscriptionEnd = stored.subs_till || null;
-                        localStorage.setItem('skyClientCurrentUser', JSON.stringify(stored));
+                        try { localStorage.setItem('skyClientCurrentUser', JSON.stringify(stored)); } catch(ex) {}
                         resolveSubscriptionState();
                         syncUserDataToLoader(stored);
                     }
@@ -1298,7 +1298,7 @@
 
         function syncUserDataToLoader(stored) {
             if (!stored || !stored.uid) return;
-            var hwid = window.skyguard_hwid || localStorage.getItem('skyguard_hwid') || '';
+            var hwid = window.skyguard_hwid || (function(){ try { return localStorage.getItem('skyguard_hwid') || ''; } catch(ex) { return ''; } })() || '';
             wv('set_user_data:' + JSON.stringify({
                 uid: stored.uid || '',
                 username: stored.nickname || stored.login || '',
@@ -1342,7 +1342,7 @@
 
         document.getElementById('logoutYesBtn').addEventListener('click', function() {
             document.getElementById('logoutOverlay').classList.remove('show');
-            localStorage.removeItem('skyClientCurrentUser');
+            try { localStorage.removeItem('skyClientCurrentUser'); } catch(ex) {}
             wv('clear_remember_data');
             wv('logout');
         });
@@ -1477,16 +1477,18 @@
                     var uidNum = String(ud.uid).replace(/[^0-9]/g, '');
                     userUidEl.textContent = 'UID: ' + (uidNum || ud.uid);
                 }
-                localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                    login: ud.login || currentNickname,
-                    nickname: currentNickname,
-                    uid: ud.uid || null,
-                    hasSubscription: !!ud.subs_till,
-                    subs_till: currentSubscriptionEnd,
-                    freeze_count: ud.freeze_count || 0,
-                    frozen_at: ud.frozen_at || null,
-                    session_token: ud.session_token || ''
-                }));
+                try {
+                    localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                        login: ud.login || currentNickname,
+                        nickname: currentNickname,
+                        uid: ud.uid || null,
+                        hasSubscription: !!ud.subs_till,
+                        subs_till: currentSubscriptionEnd,
+                        freeze_count: ud.freeze_count || 0,
+                        frozen_at: ud.frozen_at || null,
+                        session_token: ud.session_token || ''
+                    }));
+                } catch(ex) {}
                 checkVersionAccess();
             }
             else if (event.data.startsWith('launch_status:')) {

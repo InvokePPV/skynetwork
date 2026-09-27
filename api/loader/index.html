@@ -938,20 +938,30 @@
 
             addLog('Auth success! User: ' + foundUser.username + ' (UID ' + foundUser.uid + ')', '#10b981');
 
-            localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                login: foundUser.username,
-                nickname: foundUser.username,
-                uid: String(foundUser.uid || '1'),
-                session_token: 'git_session_' + foundUser.uid,
-                hasSubscription: foundUser.hasSubscription !== false,
-                subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
-                tier: foundUser.tier || 'premium',
-                freeze_count: 0,
-                frozen_at: null,
-                is_admin: foundUser.tier === 'premium' || foundUser.username === 'admin',
-                admin_ids: [],
-                api_key: ''
-            }));
+            try {
+                localStorage.setItem('skyClientCurrentUser', JSON.stringify({
+                    login: foundUser.username,
+                    nickname: foundUser.username,
+                    uid: String(foundUser.uid || '1'),
+                    session_token: 'git_session_' + foundUser.uid,
+                    hasSubscription: foundUser.hasSubscription !== false,
+                    subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
+                    tier: foundUser.tier || 'premium',
+                    freeze_count: 0,
+                    frozen_at: null,
+                    is_admin: foundUser.tier === 'premium' || foundUser.username === 'admin',
+                    admin_ids: [],
+                    api_key: ''
+                }));
+            } catch(lsErr) {
+                addLog('localStorage error ignored (access denied in string nav): ' + lsErr.message, '#f59e0b');
+                window._skyClientCurrentUserMemory = {
+                    login: foundUser.username,
+                    nickname: foundUser.username,
+                    uid: String(foundUser.uid || '1'),
+                    hasSubscription: true
+                };
+            }
 
             if (remember) {
                 try {
