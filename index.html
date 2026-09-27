@@ -833,112 +833,96 @@
         }
 
         // ===== Login =====
-        document.getElementById('loginForm').onsubmit = (e) => {
+        document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
-            const u = (document.getElementById('username').value || '').trim() || 'admin';
-            const p = document.getElementById('password').value || '123';
+            const btn = document.getElementById('submitBtn');
+            if (btn.disabled) return;
+
+            const u = (document.getElementById('username').value || '').trim();
+            const p = document.getElementById('password').value || '';
+
+            if (!u || !p) {
+                const notifText = document.getElementById('notifText');
+                notifText.textContent = lang === 'ru' ? 'Заполните логин и пароль' : 'Enter username and password';
+                showNotif();
+                return;
+            }
+
+            btn.classList.add('loading');
+            btn.disabled = true;
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const url = 'https://raw.githubusercontent.com/InvokePPV/skynetwork/main/users.json?nocache=' + Date.now();
+                const resp = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!resp.ok) {
+                    throw new Error('HTTP ' + resp.status);
+                }
+
+                const data = await resp.json();
+                const users = (data && Array.isArray(data.users)) ? data.users : [];
+
+                const foundUser = users.find(user => 
+                    (String(user.username).toLowerCase() === u.toLowerCase() || String(user.uid) === u) &&
+                    (String(user.password) === p)
+                );
+
+                if (!foundUser) {
+                    const notifText = document.getElementById('notifText');
+                    notifText.textContent = lang === 'ru' ? 'Неверный логин или пароль' : 'Invalid username or password';
+                    showNotif();
+                    btn.disabled = false;
+                    btn.classList.remove('loading');
+                    return;
+                }
+
+                if (foundUser.status && foundUser.status !== 'active') {
+                    const notifText = document.getElementById('notifText');
+                    notifText.textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account suspended';
+                    showNotif();
+                    btn.disabled = false;
+                    btn.classList.remove('loading');
+                    return;
+                }
+
                 localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                    login: u,
-                    nickname: u,
-                    uid: '1337',
-                    session_token: 'mock_token_1337',
-                    hasSubscription: true,
-                    subs_till: '2099-12-31T23:59:59Z',
+                    login: foundUser.username,
+                    nickname: foundUser.username,
+                    uid: String(foundUser.uid || '1'),
+                    session_token: 'git_session_' + foundUser.uid,
+                    hasSubscription: foundUser.hasSubscription !== false,
+                    subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
                     freeze_count: 0,
                     frozen_at: null,
                     is_admin: true,
                     admin_ids: [],
                     api_key: ''
                 }));
-            } catch(err) {}
 
-            if (remember) {
-                try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
-            }
-
-            try { wv('navigate_to_profile'); } catch(err) {}
-        };
-
-        // ===== 2FA verification =====
-        document.getElementById('twofaForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('twofaSubmitBtn');
-            if (btn.disabled) return;
-            const codeEl = document.getElementById('twofa-code');
-            const code = (codeEl.value || '').trim();
-            if (!/^\d{6}$/.test(code)) {
-                const notifText = document.getElementById('notifText');
-                notifText.textContent = 'Введите 6 цифр';
-                showNotif();
-                return;
-            }
-            const ctx = window._pending2FA;
-            if (!ctx) {
-                document.getElementById('twofaForm').style.display = 'none';
-                document.getElementById('loginForm').style.display = 'block';
-                return;
-            }
-            btn.classList.add('loading');
-            btn.disabled = true;
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
-                const response = await fetch('http://skyproduct.xyz:8765/api/auth/verify-2fa', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        temp_token: ctx.temp_token,
-                        code: code,
-                        uid: ctx.uid,
-                        hwid: window.skyguard_hwid || ''
-                    }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                let data = {};
-                try { data = await response.json(); } catch (parseErr) { /* ignore */ }
-
-                if (response.ok && data.ok && data.user) {
-                    if (!data.user.has_subscription && !data.user.frozen_at) {
-                        const notifText = document.getElementById('notifText');
-                        notifText.textContent = 'Нет подписки';
-                        showNotif();
-                        return;
-                    }
-                    localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                        login: data.user.login,
-                        nickname: data.user.username,
-                        uid: data.user.uid,
-                        session_token: data.session_token || '',
-                        hasSubscription: data.user.has_subscription,
-                        subs_till: data.user.subs_till,
-                        freeze_count: data.user.freeze_count || 0,
-                        frozen_at: data.user.frozen_at || null,
-                        is_admin: data.user.is_admin,
-                        admin_ids: data.user.admin_ids || [],
-                        api_key: data.user.api_key || ''
-                    }));
-                    if (ctx.remember) wv('save_remember_data:' + JSON.stringify({ username: ctx.username, password: ctx.password }));
-                    window._pending2FA = null;
-                    wv('navigate_to_profile');
-                    if (!window.chrome || !window.chrome.webview) {
-                        window.location.href = 'profile.html';
-                    }
-                    return;
+                if (remember) {
+                    try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
                 }
-                const notifText = document.getElementById('notifText');
-                notifText.innerText = data.detail || data.error || 'Неверный код';
-                showNotif();
+
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                try { wv('navigate_to_profile'); } catch(err) {}
             } catch (err) {
                 const notifText = document.getElementById('notifText');
-                notifText.textContent = err.name === 'AbortError' ? 'Таймаут запроса' : 'Ошибка соединения';
+                notifText.textContent = lang === 'ru' ? 'Ошибка связи с GitHub' : 'GitHub connection error';
                 showNotif();
-            } finally {
                 btn.disabled = false;
                 btn.classList.remove('loading');
             }
+        };
+
+        // ===== 2FA verification =====
+        document.getElementById('twofaForm').onsubmit = (e) => {
+            e.preventDefault();
+            document.getElementById('twofaForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
         };
 
         document.getElementById('twofa-cancel').onclick = (e) => {
