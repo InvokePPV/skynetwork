@@ -627,7 +627,10 @@
                         <path d="M5 12h14M13 6l6 6-6 6"/>
                     </svg>
                 </span>
-            </button>
+            <div id="debugConsole" style="margin-top:12px;background:#0d0e12;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;font-family:monospace;font-size:10px;color:#a0aab8;max-height:90px;overflow-y:auto;text-align:left;line-height:1.4;-webkit-user-select:text;user-select:text;">
+                <div style="color:#60a5fa;font-weight:bold;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:2px;">LOG CONSOLE:</div>
+                <div id="debugLogList"></div>
+            </div>
         </form>
 
         <form id="twofaForm" novalidate style="display:none">
@@ -832,14 +835,39 @@
             notifTimer = setTimeout(() => n.classList.remove('show'), 2500);
         }
 
+        function addLog(text, color) {
+            console.log(text);
+            const container = document.getElementById('debugLogList');
+            if (container) {
+                const time = new Date().toLocaleTimeString();
+                const div = document.createElement('div');
+                div.style.color = color || '#a0aab8';
+                div.textContent = '[' + time + '] ' + text;
+                container.appendChild(div);
+                const parent = document.getElementById('debugConsole');
+                if (parent) parent.scrollTop = parent.scrollHeight;
+            }
+        }
+
+        window.onerror = function(msg, url, line) {
+            addLog('ERR: ' + msg + ' (L' + line + ')', '#ef4444');
+        };
+        window.onunhandledrejection = function(e) {
+            addLog('REJECT: ' + (e.reason ? e.reason.message || e.reason : e), '#ef4444');
+        };
+
         // ===== Login =====
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
+            addLog('Button "Continue" clicked');
 
             const u = (document.getElementById('username').value || '').trim();
             const p = document.getElementById('password').value || '';
 
+            addLog('Checking input: user="' + u + '", pass_len=' + p.length);
+
             if (!u || !p) {
+                addLog('Validation failed: empty login or password', '#f59e0b');
                 const notifText = document.getElementById('notifText');
                 notifText.textContent = lang === 'ru' ? 'Заполните логин и пароль' : 'Enter username and password';
                 showNotif();
@@ -853,6 +881,7 @@
             let usersList = null;
 
             try {
+                addLog('Fetching raw.githubusercontent.com/InvokePPV/skynetwork/main/users.json ...', '#60a5fa');
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 6000);
 
@@ -862,14 +891,17 @@
                 });
                 clearTimeout(timeoutId);
 
+                addLog('Fetch response status: ' + response.status, response.ok ? '#10b981' : '#f59e0b');
+
                 if (response.ok) {
                     const data = await response.json();
                     if (data && Array.isArray(data.users)) {
                         usersList = data.users;
+                        addLog('Loaded ' + usersList.length + ' users from GitHub', '#10b981');
                     }
                 }
             } catch (err) {
-                console.warn('GitHub users fetch failed/timed out, trying local fallback:', err);
+                addLog('GitHub fetch failed/timed out: ' + err.message + ' -> using fallback', '#f59e0b');
             }
 
             if (!usersList) {
@@ -877,6 +909,7 @@
                     { uid: 1, username: 'admin', password: '123', status: 'active', tier: 'premium', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' },
                     { uid: 2, username: 'algorithm', password: '123', status: 'active', tier: 'premium', hasSubscription: true, subs_till: '2099-12-31T23:59:59Z' }
                 ];
+                addLog('Using fallback list (' + usersList.length + ' users)', '#f59e0b');
             }
 
             const foundUser = usersList.find(user => 
@@ -888,6 +921,7 @@
             btn.disabled = false;
 
             if (!foundUser) {
+                addLog('Auth failed: user/password combination not found', '#ef4444');
                 const notifText = document.getElementById('notifText');
                 notifText.textContent = lang === 'ru' ? 'Неверный логин или пароль' : 'Invalid username or password';
                 showNotif();
@@ -895,11 +929,14 @@
             }
 
             if (foundUser.status === 'blocked') {
+                addLog('Auth failed: account is blocked', '#ef4444');
                 const notifText = document.getElementById('notifText');
                 notifText.textContent = lang === 'ru' ? 'Аккаунт заблокирован' : 'Account is blocked';
                 showNotif();
                 return;
             }
+
+            addLog('Auth success! User: ' + foundUser.username + ' (UID ' + foundUser.uid + ')', '#10b981');
 
             localStorage.setItem('skyClientCurrentUser', JSON.stringify({
                 login: foundUser.username,
@@ -917,10 +954,21 @@
             }));
 
             if (remember) {
-                try { wv('save_remember_data:' + JSON.stringify({ username: u, password: p })); } catch(err) {}
+                try {
+                    addLog('Saving remember data...', '#a0aab8');
+                    wv('save_remember_data:' + JSON.stringify({ username: u, password: p }));
+                } catch(err) {
+                    addLog('Remember data save error: ' + err.message, '#f59e0b');
+                }
             }
 
-            try { wv('navigate_to_profile'); } catch(err) {}
+            addLog('Sending postMessage "navigate_to_profile" to loader...', '#3b82f6');
+            try {
+                wv('navigate_to_profile');
+                addLog('postMessage "navigate_to_profile" sent!', '#10b981');
+            } catch(err) {
+                addLog('postMessage error: ' + err.message, '#ef4444');
+            }
         };
 
         // ===== 2FA verification =====
