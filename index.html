@@ -939,6 +939,17 @@
             addLog('Auth success! User: ' + foundUser.username + ' (UID ' + foundUser.uid + ')', '#10b981');
 
             try {
+                wv('set_user_data:' + JSON.stringify({
+                    uid: String(foundUser.uid || '1'),
+                    username: foundUser.username,
+                    subs_till: foundUser.subs_till || '2099-12-31T23:59:59Z',
+                    has_subscription: true
+                }));
+            } catch(setErr) {
+                addLog('set_user_data error: ' + setErr.message, '#f59e0b');
+            }
+
+            try {
                 localStorage.setItem('skyClientCurrentUser', JSON.stringify({
                     login: foundUser.username,
                     nickname: foundUser.username,

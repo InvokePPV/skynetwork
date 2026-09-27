@@ -1189,6 +1189,7 @@
         }
 
         function getStoredCurrentUser() {
+            if (window._skyClientCurrentUserMemory) return window._skyClientCurrentUserMemory;
             try { return JSON.parse(localStorage.getItem('skyClientCurrentUser') || 'null'); }
             catch (e) { return null; }
         }
@@ -1469,7 +1470,7 @@
             }
             else if (event.data.startsWith('user_data:')) {
                 var ud = JSON.parse(event.data.substring(10));
-                currentNickname = ud.username || ud.nickname || 'algorithm';
+                currentNickname = ud.username || ud.nickname || 'Sky Client';
                 currentSubscriptionEnd = ud.subs_till || null;
                 document.getElementById('userTitle').textContent = currentNickname;
                 var userUidEl = document.getElementById('userUid');
@@ -1477,17 +1478,18 @@
                     var uidNum = String(ud.uid).replace(/[^0-9]/g, '');
                     userUidEl.textContent = 'UID: ' + (uidNum || ud.uid);
                 }
+                window._skyClientCurrentUserMemory = {
+                    login: ud.login || currentNickname,
+                    nickname: currentNickname,
+                    uid: String(ud.uid || '1'),
+                    hasSubscription: true,
+                    subs_till: currentSubscriptionEnd,
+                    freeze_count: ud.freeze_count || 0,
+                    frozen_at: ud.frozen_at || null,
+                    session_token: ud.session_token || ''
+                };
                 try {
-                    localStorage.setItem('skyClientCurrentUser', JSON.stringify({
-                        login: ud.login || currentNickname,
-                        nickname: currentNickname,
-                        uid: ud.uid || null,
-                        hasSubscription: !!ud.subs_till,
-                        subs_till: currentSubscriptionEnd,
-                        freeze_count: ud.freeze_count || 0,
-                        frozen_at: ud.frozen_at || null,
-                        session_token: ud.session_token || ''
-                    }));
+                    localStorage.setItem('skyClientCurrentUser', JSON.stringify(window._skyClientCurrentUserMemory));
                 } catch(ex) {}
                 checkVersionAccess();
             }
@@ -1543,20 +1545,14 @@
         window.addEventListener('load', function() {
             var overlay = document.getElementById('loadingOverlay');
             var stored = getStoredCurrentUser();
-            if (!stored || !stored.uid) {
-                stored = {
-                    login: 'algorithm',
-                    nickname: 'algorithm',
-                    uid: '1337',
-                    hasSubscription: true,
-                    subs_till: '2099-12-31T23:59:59Z',
-                    freeze_count: 0,
-                    frozen_at: null,
-                    session_token: 'mock_token_1337'
-                };
-                try {
-                    localStorage.setItem('skyClientCurrentUser', JSON.stringify(stored));
-                } catch(e) {}
+            if (stored && stored.uid) {
+                currentNickname = stored.nickname || stored.login || 'Sky Client';
+                document.getElementById('userTitle').textContent = currentNickname;
+                var userUidEl = document.getElementById('userUid');
+                if (userUidEl && stored.uid) {
+                    var uidNum = String(stored.uid).replace(/[^0-9]/g, '');
+                    userUidEl.textContent = 'UID: ' + (uidNum || stored.uid);
+                }
             }
             var delay = Math.random() * 100 + 100;
             setTimeout(function() {
